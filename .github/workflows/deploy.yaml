@@ -18,5 +18,5 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           script: |
             cd /home/deploy/quest-web-app
-            ./deploy.sh
+            bash deploy.sh
 
