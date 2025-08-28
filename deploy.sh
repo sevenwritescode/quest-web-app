@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd /home/deploy/app
+cd /home/deploy/quest-web-app
 
 # update from origin
 git fetch --all --prune
