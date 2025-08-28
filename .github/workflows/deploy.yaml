@@ -18,7 +18,8 @@ jobs:
         port: ${{ secrets.SSH_PORT || '22' }}
         fingerprint: ${{ secrets.SSH_FINGERPRINT }}
         script: |
-          cd /home/deploy/quest-web-app 
+          cd /home/deploy/quest-web-app
+          git pull 
           bash ./deploy.sh
 
 
