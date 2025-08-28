@@ -1,30 +1,24 @@
-name: Deploy
+name: Deploy to Lightsail (git-pull build)
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+    - name: Run deploy script on Lightsail
+      uses: appleboy/ssh-action@v1.2.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT || '22' }}
+        fingerprint: ${{ secrets.SSH_FINGERPRINT }}
+        script: |
+          cd /home/deploy/quest-web-app 
+          bash ./deploy.sh
 
-      - name: Start ssh-agent and add private key
-        uses: webfactory/ssh-agent@v0.8.1
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Install ssh client (if needed)
-        run: sudo apt-get update && sudo apt-get install -y openssh-client
-
-      - name: Add host key (trusted)
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-          chmod 700 ~/.ssh
-
-      - name: Run remote build & start
-        run: |
-          ssh -o StrictHostKeyChecking=yes \
-              -o UserKnownHostsFile=$HOME/.ssh/known_hosts \
-              deploy@valyte.xyz "cd ./quest-web-app && bash deploy.sh"
