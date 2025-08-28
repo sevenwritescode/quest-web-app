@@ -19,7 +19,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Ensure known_hosts (optional: adds host key for valyte.xyz)
+      - name: "Ensure known_hosts (optional: adds host key for valyte.xyz)"
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
@@ -30,6 +30,6 @@ jobs:
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes \
             -p "${{ secrets.SSH_PORT || '22' }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "bash -lc 'cd ${REMOTE_APP_DIR:-/home/deploy/app} && ./deploy.sh'"
+            "bash -lc 'cd ${REMOTE_APP_DIR:-/home/deploy/quest-web-app} && ./deploy.sh'"
         env:
-          REMOTE_APP_DIR: /home/deploy/app
+          REMOTE_APP_DIR: /home/deploy/quest-web-app
