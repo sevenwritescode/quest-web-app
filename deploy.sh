@@ -1,58 +1,29 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+cd /home/deploy/app
 
-# Deploy script for quest-web-app
-# This script pulls the latest code, builds the application, and starts it
+# update from origin
+git fetch --all --prune
+git reset --hard origin/main
 
-# Error handling
-set -e
+# install deps & build
+npm ci
+npm run build
 
-# Log function
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
-}
-
-# Directory of this script
-APP_DIR="$(dirname "$(realpath "$0")")"
-
-log "Starting deployment of quest-web-app"
-log "Working directory: $APP_DIR"
-
-# Navigate to app directory
-cd "$APP_DIR"
-
-# Pull latest changes
-log "Pulling latest code from repository..."
-git pull
-log "Code updated successfully"
-
-# Install dependencies
-log "Installing dependencies..."
-npm install  # Use npm or yarn depending on your project
-log "Dependencies installed successfully"
-
-# Build the application
-log "Building the application..."
-npm run build  # Adjust build command according to your project
-log "Build completed successfully"
-
-# Stop any running instance
-log "Checking for running instances..."
-if [ -f ".pid" ]; then
-    OLD_PID=$(cat .pid)
-    if ps -p "$OLD_PID" > /dev/null; then
-        log "Stopping existing application (PID: $OLD_PID)"
-        kill "$OLD_PID"
-        sleep 2
-    fi
-    rm .pid
+# restart app: prefer pm2 if available, else fallback to systemd
+if command -v pm2 >/dev/null 2>&1; then
+  # If you use an ecosystem file: pm2 reload ecosystem.config.js --env production
+  # Otherwise try to restart existing process named "app", or start it:
+  if pm2 describe app >/dev/null 2>&1; then
+    pm2 reload app || pm2 restart app
+  else
+    # start via npm start; adjust to your start script / name
+    pm2 start npm --name "app" -- start
+  fi
+  pm2 save
+else
+  # fallback to systemd unit name "myapp.service" (see next section)
+  sudo systemctl restart myapp.service || true
 fi
 
-# Start the application
-log "Starting the application..."
-# Modify the start command according to your project:
-nohup npm start > app.log 2>&1 &
-# Save the process ID
-echo $! > .pid
-log "Application started with PID: $(cat .pid)"
-
-log "Deployment completed successfully"
+echo "deploy finished: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
