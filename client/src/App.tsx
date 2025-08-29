@@ -1,38 +1,53 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { Component } from 'react';
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <> 
-      <div> 
-
-      </div>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React + Full Stack Node.js Backend + 😀</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+// Define props interface
+interface AppProps {
+  // Add your props here
 }
 
-export default App
+// Define state interface
+interface AppState {
+  // Add your state properties here
+}
+
+class App extends Component<AppProps, AppState> {
+  constructor(props: AppProps) {
+    super(props);
+    this.state = {
+      // Initialize your state here
+    };
+  }
+
+  render() {
+    return (
+    <>
+      <div className="flex justify-center text-center align-middle font-[Chomsky] text-4xl  p-10">
+        <h1 className=""> The <span className="text-red-700">Quest</span> Web App Companion </h1>
+      </div>
+
+      <div className="flex justify-center flex-col space-x-6 items-center font-[Consolas]">
+        <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 m-1">
+          Host
+        </button>
+        <div className="flex items-center space-x-2 m-2">
+          
+          <button className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 m-1" 
+            onClick={() => console.log("click!")}>  
+            <input
+              type="text"
+              size={4}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded bg-green-800 px-2 py-1 w-[6ch] mr-2 text-center placeholder-gray-400"
+              placeholder="----"
+            />
+            Join
+          </button>
+        </div>
+      </div>
+    
+    </>
+    );
+  }
+}
+
+export default App;
