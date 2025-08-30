@@ -1,8 +1,9 @@
 import { Component } from "react";
+import type { LandingState } from "./App";
 
 interface LandingProps {
-  code: string,
-  onCodeChange: (code: string) => void
+  payload: LandingState,
+  onPayloadChange: (patch: Partial<LandingState>) => void
 }
 
 class Landing extends Component<LandingProps> {
@@ -29,7 +30,7 @@ class Landing extends Component<LandingProps> {
                 type="text"
                 size={4}
                 onClick={(e) => e.stopPropagation()}
-                value={this.props.code}
+                value={this.props.payload.code}
                 onChange={this.validateCodeInput}
                 className="rounded bg-green-800 h-8 px-2 mr-2 text-left placeholder-gray-400 "
                 placeholder="----"
@@ -51,7 +52,7 @@ class Landing extends Component<LandingProps> {
       // input is too long, drop the end
       input = input.slice(0, 4);
     }
-    this.props.onCodeChange(input.toUpperCase());
+    this.props.onPayloadChange({ code: input.toUpperCase() });
   }
 }
 

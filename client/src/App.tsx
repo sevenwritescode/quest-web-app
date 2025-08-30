@@ -1,35 +1,40 @@
 import { Component } from 'react';
 import Landing from './Landing';
 
-interface AppProps {
-}
+type Player = { id: string, name: string }
 
-interface AppState {
-  page: Page
-}
+type AppState =
+| { page: "landing", payload: LandingState } 
+| { page: "lobby", payload: LobbyState } 
+| { page: "game", payload: GameState}
 
-type Page = { kind: "landing", code: string } | { kind: "lobby" } | { kind: "game" }
+export type LandingState = { code: string }
+export type LobbyState = { players: Player[], clientId: string }
+export type GameState = {}
 
-class App extends Component<AppProps, AppState> {
-  constructor(props: AppProps) {
-    super(props);
-    this.state = {
-      page: { kind: "landing", code: "" }
-    };
+class App extends Component<{}, AppState> {
+  state: AppState = {
+    page: "landing", 
+    payload: { code: "" }
   }
 
   render = () => {
-    if (this.state.page.kind === "landing") {
-      return <Landing code={this.state.page.code} onCodeChange={this.doUpdateCode}></Landing>
+    if (this.state.page === "landing") {
+      return <Landing payload={this.state.payload} onPayloadChange={this.updateLanding}></Landing>
+    }
+    if (this.state.page === "lobby")
+    {
+      // return <Lobby></Lobby>
     }
   }
 
-  doUpdateCode = (code: string) => {
-    if (this.state.page.kind !== "landing") {
+  updateLanding = (patch: Partial<LandingState>) => {
+    if (this.state.page !== "landing") {
       throw new Error("App is in an invalid state: attempt to update code while not on landing page");
     }
     this.setState({
-      page: { kind: "landing", code }
+      page: "landing",
+      payload: { ...this.state.payload, ...patch }
     });
   }
 }
