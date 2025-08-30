@@ -13,17 +13,17 @@ class Landing extends Component<LandingProps> {
   render() {
     return (
       <>
-        <div className="flex justify-center text-center align-middle font-[Chomsky] text-4xl  p-10">
-          <h1 className=""> The <span className="text-[rgb(212,51,51)]">Quest</span> Web App Companion </h1>
+        <div className="flex justify-center text-center align-middle text-shadow-[0px_4px_8px_rgba(0,0,0,0.75)] font-serif text-5xl  p-10">
+          <h1 className=""> The <span className="font-[Chomsky] text-6xl text-[rgb(213,4,4)]">Quest</span> Web App Companion </h1>
         </div>
 
-        <div className="flex justify-center flex-col space-x-6 items-center font-[Consolas]">
-          <button className="h-12 w-28 bg-[rgb(230,97,2)] text-white rounded hover:bg-[rgb(184,77,0)] m-1 flex items-center justify-center">
+        <div className="flex justify-center space-x-6 items-center font-[Consolas]">
+          <button className="h-12 w-28 bg-[rgb(230,97,2)] text-white rounded hover:bg-[rgb(184,77,0)] m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl">
             Host
           </button>
           <div className="flex items-center space-x-2 m-2">
 
-            <button className="h-12 w-28 bg-green-600 text-white rounded hover:bg-green-700 m-1 flex items-center justify-center"
+            <button className="h-12 p-2 bg-green-600 text-white rounded hover:bg-green-700 m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl"
               onClick={() => console.log("click!")}>
               <input
                 type="text"
