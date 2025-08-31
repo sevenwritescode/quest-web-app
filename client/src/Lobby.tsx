@@ -1,12 +1,12 @@
-import React from "react";
-import type { LobbyState } from "./App";
+// import React from "react";
+// import type { LobbyState } from "./App";
 
 
-interface LobbyProps {
-   payload: LobbyState 
-}
+// interface LobbyProps {
+//    payload: LobbyState 
+// }
 
-function Lobby(props: LobbyProps)
-{
-    
-}
+// function Lobby(props: LobbyProps)
+// {
+
+// }

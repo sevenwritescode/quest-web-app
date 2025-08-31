@@ -29,12 +29,16 @@ export default function App() {
 // 2) LandingScreen: same as your landing, but pushes the URL & lets server set a cookie
 function LandingScreen() {
   const [payload, setPayload] = useState<LandingState>({ code: '' })
-  const navigate              = useNavigate()
+  // const _navigate              = useNavigate()
 
-  const onPayloadChange = (patch: Partial<LandingState>) =>
+  const doPayloadChange = (patch: Partial<LandingState>) =>
     setPayload(p => ({ ...p, ...patch }))
 
-  const onTryJoin = async () => {
+  const onHostClick = async () => {
+    doPayloadChange({ error: "test -- server is not hooked up yet "});
+  }
+
+  const onJoinClick = async () => {
     // try {
     //   const res = await fetch(`/api/rooms/${payload.code}/join`, {
     //     method: 'POST',
@@ -48,14 +52,15 @@ function LandingScreen() {
     // } catch (e:any) {
     //   setError(e.toString())
     // }
-    setPayload(p => ({ ...p, ...{error: ("test -- server is not hooked up yet")}}));
+    doPayloadChange({error: "test -- server is not hooked up yet"});
   }
 
   return (
     <Landing
       payload={payload}
-      doPayloadChange={onPayloadChange}
-      doTryJoin={onTryJoin}
+      doPayloadChange={doPayloadChange}
+      doHostClick={onHostClick}
+      doJoinClick={onJoinClick}
     />
   )
 }

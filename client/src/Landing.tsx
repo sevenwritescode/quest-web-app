@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react"
 import type { LandingState } from "./App"
 
 interface LandingProps {
-  payload: LandingState
-  doPayloadChange: (patch: Partial<LandingState>) => void
-  doTryJoin: () => void
+  payload: LandingState,
+  doPayloadChange: (patch: Partial<LandingState>) => void,
+  doHostClick: () => void,
+  doJoinClick: () => void
 }
 
 export default function Landing(props: LandingProps) {
@@ -74,7 +75,7 @@ export default function Landing(props: LandingProps) {
         <div className="flex items-center space-x-2 m-2">
           <button
             className="h-12 p-2 bg-green-600 text-white rounded hover:bg-green-700 m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl shadow-xl"
-            onClick={props.doTryJoin}
+            onClick={props.doJoinClick}
           >
             <input
               type="text"
