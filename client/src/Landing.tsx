@@ -69,7 +69,8 @@ export default function Landing(props: LandingProps) {
       </div>
 
       <div className="flex justify-center space-x-6 items-center font-[Consolas]">
-        <button className="h-12 w-28 bg-[rgb(230,97,2)] text-white rounded hover:bg-[rgb(184,77,0)] m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl shadow-xl">
+        <button className="h-12 w-28 bg-[rgb(230,97,2)] text-white rounded hover:bg-[rgb(184,77,0)] m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl shadow-xl"
+        onClick={props.doHostClick}>
           Host
         </button>
         <div className="flex items-center space-x-2 m-2">
