@@ -10,3 +10,6 @@ app.listen(PORT, () => {
 console.log(`🚀 Server listening on http://0.0.0.0:${PORT}`);
 });
 
+app.post("/api/create-room", (req, res) => {
+    res.json({ code: "ABCD", clientId: "234" });
+})

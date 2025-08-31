@@ -68,29 +68,31 @@ export default function Landing(props: LandingProps) {
         </h1>
       </div>
 
-      <div className="flex justify-center space-x-6 items-center font-[Consolas]">
-        <button className="h-12 w-28 bg-[rgb(230,97,2)] text-white rounded hover:bg-[rgb(184,77,0)] m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl shadow-xl"
-        onClick={props.doHostClick}>
-          Host
-        </button>
-        <div className="flex items-center space-x-2 m-2">
-          <button
-            className="h-12 p-2 bg-green-600 text-white rounded hover:bg-green-700 m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl shadow-xl"
-            onClick={props.doJoinClick}
-          >
-            <input
-              type="text"
-              size={4}
-              onClick={(e) => e.stopPropagation()}
-              value={props.payload.code}
-              onChange={validateCodeInput}
-              className="rounded bg-green-800 h-8 px-2 mr-2 text-left placeholder-gray-400"
-              placeholder="----"
-            />
-            Join
+        <div className="flex justify-center space-x-6 items-center font-[Consolas]">
+          <button className={`h-12 w-28  text-white rounded m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl shadow-xl
+          ${props.payload.hostLoading ? "bg-[rgb(184,77,0)]" : "bg-[rgb(230,97,2)] hover:bg-[rgb(184,77,0)]}"}`}
+          onClick={props.doHostClick}>
+            {props.payload.hostLoading ? "Host..." : "Host"}
           </button>
+          <div className="flex items-center space-x-2 m-2">
+            <button
+              className={`h-12 p-2 text-white rounded  m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl shadow-xl
+              ${props.payload.joinLoading ? "bg-green-700" : "bg-green-600 hover:bg-green-700"}`}
+              onClick={props.doJoinClick}
+            >
+              <input
+                type="text"
+                size={4}
+                onClick={(e) => e.stopPropagation()}
+                value={props.payload.code}
+                onChange={validateCodeInput}
+                className="rounded bg-green-800 h-8 px-2 mr-2 text-left placeholder-gray-400 focus:outline-none"
+                placeholder="----"
+              />
+              Join
+            </button>
+          </div>
         </div>
-      </div>
     </>
   )
 }
