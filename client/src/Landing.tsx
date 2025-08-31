@@ -32,7 +32,7 @@ export default function Landing(props: LandingProps) {
       clearTimeout(fadeTimer)
       clearTimeout(clearTimer)
     }
-  }, [props.payload.error, props.doPayloadChange])
+  }, [props.payload.error])
 
   const validateCodeInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     let input = event.target.value.replace(/[^A-Za-z]/g, "").toUpperCase()

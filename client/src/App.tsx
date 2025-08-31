@@ -35,6 +35,10 @@ function LandingScreen() {
     setPayload(p => ({ ...p, ...patch }))
 
   const onHostClick = async () => {
+    // try {
+    //   const res = await fetch(`api/create-room`)
+    // }
+    // catch {}
     doPayloadChange({ error: "test -- server is not hooked up yet "});
   }
 
