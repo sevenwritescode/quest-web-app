@@ -1,21 +1,20 @@
 // App.tsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Routes,
   Route,
   useNavigate,
-  // useParams,
+  useParams,
   useLocation
 } from 'react-router-dom'
 import Landing from './Landing'
-import { Room } from './Room';
-// import Lobby   from './Lobby'
-// import Game    from './Game'
+import Room from './Room';
+import { io, Socket } from "socket.io-client"
 
 export type Player       = { id: string; name: string }
 
-export type LandingState = { code: string, error?: string, hostLoading: boolean, joinLoading: boolean }
-export type RoomState    = { players: Player[], clientId: string }
+export type LandingState    = { code: string, error?: string, hostLoading: boolean, joinLoading: boolean }
+export type RoomClientState = { players: Player[], clientId: string, hostId: string }
 
 // 1) Top-level router
 export default function App() {
@@ -29,8 +28,10 @@ export default function App() {
 
 // 2) LandingScreen: same as your landing, but pushes the URL & lets server set a cookie
 function LandingScreen() {
-  const [payload, setPayload] = useState<LandingState>({ code: '', hostLoading: false, joinLoading: false })
   const navigate              = useNavigate()
+  const location = useLocation()
+  const [payload, setPayload] = useState<LandingState>({ code: '', hostLoading: false, joinLoading: false, error: location.state?.error })
+  location.state.error = undefined; 
 
   const doPayloadChange = (patch: Partial<LandingState>) =>
     setPayload(p => ({ ...p, ...patch }))
@@ -49,12 +50,8 @@ function LandingScreen() {
         credentials: 'include'
       });
       if (!res.ok) throw {message: `${res.status}: ${await res.text()}`};
-      const { code, clientId } = await res.json() as { code: string, clientId: string };
-      if (clientId === undefined)
-        throw {message: "Failed to Assign Client Id"};
-      navigate(`/room/${code}`, {
-        state: { players: [], clientId } satisfies RoomState
-      });
+      const { code, } = await res.json() as { code: string, };
+      navigate(`/room/${code}`);
     }
     catch (e: any) {
       doPayloadChange({error: e.message || "Failed to Create Room"})
@@ -76,7 +73,12 @@ function LandingScreen() {
     // } catch (e:any) {
     //   setError(e.toString())
     // }
-    doPayloadChange({error: "join -- server is not hooked up yet"});
+    // doPayloadChange({error: "join -- server is not hooked up yet"});
+    if (payload.code === "")
+    {
+      return;
+    }
+    navigate(`/room/${payload.code}`)
   }
 
   return (
@@ -91,59 +93,48 @@ function LandingScreen() {
 
 // 3) RoomScreen: same URL for lobby & game. we fetch /state and the server tells us which page
 function RoomScreen() {
-  // const { code } = useParams<{ code: string }>();
-  // const navigate = useNavigate();
-  const loc = useLocation();
+  const { code }= useParams<{ code: string }>()
+  console.log(`code: ${code}`)
 
-  const incoming = loc.state as RoomState | null
-  console.log(loc); 
+  const [payload, setPayload] = useState<RoomClientState>({ players: [], hostId: "", clientId: ""});
 
-  const [payload, _setPlayload] = useState<RoomState>(() => {
-    if (incoming === null) {
-      // TODO
-      // we haven't joined this room yet, in this case, we should try to join the room
-      console.log(incoming);
-      throw {} 
-    }
-    return incoming;
-  });
+  const navigate              = useNavigate()
+  
+  const doPayloadChange = (patch: Partial<RoomClientState>) =>
+    setPayload(p => ({ ...p, ...patch }))
 
-  // on mount (or code change) rehydrate from server
-  // useEffect(() => {
-  //   if (!code) return
-  //   fetch(`/api/rooms/${code}/state`, {
-  //     credentials: 'include'   // sends the session cookie
-  //   })
-  //     .then(r => {
-  //       if (!r.ok) throw new Error('Not in room')
-  //       return r.json()
-  //     })
-  //     .then((data:
-  //       | { page: 'lobby'; payload: RoomState }
-  //       | { page: 'game';  payload: GameState  }
-  //     ) => setState(data))
-  //     .catch(() => navigate('/'))
-  // }, [code])
+  useEffect(() => {
+    const sock: Socket = io("/", {
+      path: "/socket.io",
+      withCredentials: true 
+    });
 
-  // if (!state) return <div>Loading…</div>
+    sock.on("connect_error", (err: any) => {
+      console.error("socket connect_error:", err?.message);
+    });
 
-  // if (state.page === 'lobby') {
-  //   return (
-  //     <Lobby
-  //       players={state.payload.players}
-  //       clientId={state.payload.clientId}
-  //       onStartGame={async () => {
-  //         await fetch(`/api/rooms/${code}/start`, {
-  //           method: 'POST',
-  //           credentials: 'include'
-  //         })
-  //         // optimistically switch to “game” U.I.
-  //         setState({ page: 'game', payload: {} })
-  //       }}
-  //     />
-  //   )
-  // }
+    sock.on("connect", () => {
+      sock.emit("join", { code });
+    });
 
-  // state.page === 'game'
+    sock.on("roomState", (state: RoomClientState) => {
+      doPayloadChange(state);
+    });
+
+    sock.on("error", (err: any) => {
+      console.log("socket error:", err)
+      sock.disconnect()
+      navigate("/", {
+        replace: true,
+        state: { error: String(err || "Connection error") }
+      })
+    });
+
+    return () => {
+      sock.off(); // remove handlers
+      sock.disconnect();
+    };
+  }, [code]);
+
   return <Room payload={payload}/>
 }

@@ -1,12 +1,12 @@
 // import React from "react";
-import type { RoomState } from "./App";
+import type { RoomClientState } from "./App";
 
 
 interface RoomProps {
-   payload: RoomState 
+   payload: RoomClientState 
 }
 
-export function Room(_props: RoomProps)
+export default function Room(_props: RoomProps)
 {
     return <>Insert Room HTML Here</>
 }
