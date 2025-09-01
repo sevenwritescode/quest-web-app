@@ -8,12 +8,8 @@ import cookie from "cookie";
 
 const router = express();
 // Determine ports for HTTP (Express) and Socket.IO servers
-const HTTP_PORT = process.env.NODE_ENV === 'production'
-  ? Number(process.env.PORT)
-  : 4000;
-const SOCKET_PORT = process.env.NODE_ENV === 'production'
-  ? (process.env.SOCKET_PORT ? Number(process.env.SOCKET_PORT) : HTTP_PORT + 1)
-  : 4001;
+const HTTP_PORT = Number(process.env.PORT) || 4000;
+const SOCKET_PORT = (Number(process.env.PORT) + 1) || 4001;
 router.use(express.json());
 router.use(cookieParser());
 

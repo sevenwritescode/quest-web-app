@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "serve": "serve -s dist -l 3002"
+    "serve": "serve -s dist -l 3001"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.12",
