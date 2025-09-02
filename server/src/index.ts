@@ -82,30 +82,16 @@ app.use = function (path: any, ...rest: any) {
   return origUse(path, ...rest)
 }
 const origGet = app.get.bind(app)
-app.get = function (path: any, ...rest: any) {
+app.get = function (path: any, ...rest: any ) {
   console.log('app.get called with:', path)
   return origGet(path, ...rest)
 }
 
-const clientDistPath = path.join(__dirname, "../../client/dist")
-console.log(clientDistPath)
-if (process.env.NODE_ENV === "production" && fs.existsSync(clientDistPath)) {
-  console.log("💾  Serving static from:", clientDistPath)
-  app.use(express.static(clientDistPath))
-  // For client‐side routing, return index.html on any non‐API path:
-  app.get("/*", (_req, res) => {
-    res.sendFile(path.join(clientDistPath, "index.html"))
-  })
-} else {
-  console.log("🛠  Skipping static-serve (dev mode or no dist folder)")
-}
 
-console.log(1);
 
 const server = http.createServer(app);
 const io = new Server(server, { path: "/socket.io" });
 
-console.log(2);
 
 io.use((socket, next) => {
   const raw = socket.handshake.headers.cookie || "";
@@ -117,8 +103,6 @@ io.use((socket, next) => {
   socket.data.sessionAuth = sessionAuth;
   next();
 });
-
-console.log(3)
 
 io.on("connection", (socket) => {
   console.log(`⚡ Socket connected: ${socket.id}`);
@@ -149,8 +133,17 @@ io.on("connection", (socket) => {
 
 });
 
-console.log(4)
+if (process.env.NODE_ENV === "production") {
+  const clientDistPath = path.join(__dirname, "../../client/dist");
+  app.use(express.static(clientDistPath));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(clientDistPath, "index.html"));
+  });
+}
 
 server.listen(PORT, () => {
   console.log(`🚀 HTTP + Websockets on port ${PORT}`)
 })
+
+
+
