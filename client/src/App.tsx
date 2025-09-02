@@ -30,8 +30,7 @@ export default function App() {
 function LandingScreen() {
   const navigate              = useNavigate()
   const location = useLocation()
-  const [payload, setPayload] = useState<LandingState>({ code: '', hostLoading: false, joinLoading: false, error: location.state?.error })
-  location.state.error = undefined; 
+  const [payload, setPayload] = useState<LandingState>({ code: '', hostLoading: false, joinLoading: false, error: location?.state?.error })
 
   const doPayloadChange = (patch: Partial<LandingState>) =>
     setPayload(p => ({ ...p, ...patch }))
