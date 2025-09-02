@@ -75,7 +75,7 @@ app.get("/api/get-rooms-info", (_req, res) => {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname  = dirname(__filename)
 
-const clientDistPath = path.resolve(__dirname, "../../client/dist")
+const clientDistPath = path.join(__dirname, "../../client/dist")
 console.log(clientDistPath)
 if (process.env.NODE_ENV === "production" && fs.existsSync(clientDistPath)) {
   console.log("💾  Serving static from:", clientDistPath)
@@ -85,7 +85,7 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(clientDistPath)) {
     res.sendFile(path.join(clientDistPath, "index.html"))
   })
 } else {
-  console.log("🛠  Skipping static‐serve (dev mode or no dist folder)")
+  console.log("🛠  Skipping static-serve (dev mode or no dist folder)")
 }
 
 
