@@ -23,7 +23,6 @@ app.get("/api/health", (_req, res) => {
 
 export type Player    = { id: string; name?: string }
 export type RoomClientState = { code: string, players: Player[], clientId: string, hostId: string }
-
 export type RoomState = { code: string, players: Player[], hostId: string, authToId: Record<string,string>}
 
 
@@ -76,7 +75,8 @@ app.get("/api/get-rooms-info", (_req, res) => {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname  = dirname(__filename)
 
-const clientDistPath = path.resolve(__dirname, "../client/dist")
+const clientDistPath = path.resolve(__dirname, "../../client/dist")
+console.log(clientDistPath)
 if (process.env.NODE_ENV === "production" && fs.existsSync(clientDistPath)) {
   console.log("💾  Serving static from:", clientDistPath)
   app.use(express.static(clientDistPath))
