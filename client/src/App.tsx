@@ -115,7 +115,7 @@ function RoomScreen() {
     });
 
     sock.on("connect_error", (err: any) => {
-      console.error("socket connect_error:", err?.message);
+      console.error("socket connect_error:", err);
     });
 
     sock.on("connect", () => {

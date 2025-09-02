@@ -72,32 +72,15 @@ app.get("/api/get-rooms-info", (_req, res) => {
   res.json(rooms);
 });
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname  = dirname(__filename)
-
-
-const origUse = app.use.bind(app)
-app.use = function (path: any, ...rest: any) {
-  console.log('app.use called with:', path)
-  return origUse(path, ...rest)
-}
-const origGet = app.get.bind(app)
-app.get = function (path: any, ...rest: any ) {
-  console.log('app.get called with:', path)
-  return origGet(path, ...rest)
-}
-
-
 
 const server = http.createServer(app);
 const io = new Server(server, { path: "/socket.io" });
-
 
 io.use((socket, next) => {
   const raw = socket.handshake.headers.cookie || "";
   const cookies = cookie.parse(raw);
   const sessionAuth = cookies.sessionAuth;
-
+  console.log("io.use");
   if (!sessionAuth) return next(new Error("Unauthorized - missing sessionAuth"));
 
   socket.data.sessionAuth = sessionAuth;
