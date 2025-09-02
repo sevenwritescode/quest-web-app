@@ -32,7 +32,7 @@ export default function Room(props: RoomProps) {
     };
 
     
-        console.log(props)
+    console.log(props.payload)
     return (
         <div className="h-screen w-screen flex flex-wrap justify-center items-center">
             {players.map(player => (
@@ -52,7 +52,8 @@ export default function Room(props: RoomProps) {
                                 onClick={handleNameChange}
                                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
                             >
-sdf                            </button>
+                                Save
+                            </button>
                             <span className="text-sm text-gray-500 mt-1">you</span>
                         </>
                     ) : (

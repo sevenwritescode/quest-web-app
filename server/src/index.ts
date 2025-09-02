@@ -122,7 +122,8 @@ io.on("connection", (socket) => {
     }
 
     socket.join(code);
-    io.to(code).emit("roomStateUpdate", { players: room.players, clientId });
+    socket.emit("roomStateUpdate", { clientId });
+    io.to(code).emit("roomStateUpdate", { players: room.players });
   });
 
   socket.on("changeName", ({ newName, code }: { newName: string, code: string }) => {
