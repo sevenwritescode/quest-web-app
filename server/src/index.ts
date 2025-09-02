@@ -72,9 +72,13 @@ app.get("/api/get-rooms-info", (_req, res) => {
   res.json(rooms);
 });
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname  = dirname(__filename)
+
 
 const server = http.createServer(app);
 const io = new Server(server, { path: "/socket.io" });
+
 
 io.use((socket, next) => {
   const raw = socket.handshake.headers.cookie || "";
