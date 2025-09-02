@@ -70,7 +70,8 @@ export default function Landing(props: LandingProps) {
 
         <div className="flex justify-center space-x-6 items-center font-[Consolas]">
           <button className={`h-12 w-28  text-white rounded m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl shadow-xl
-          ${props.payload.hostLoading ? "bg-[rgb(184,77,0)]" : "bg-[rgb(230,97,2)] hover:bg-[rgb(184,77,0)]}"}`}
+          ${props.payload.hostLoading ? "bg-[rgb(184,77,0)]" : "bg-[rgb(230,97,2)] hover:bg-[rgb(184,77,0)]"}`}
+          
           onClick={props.doHostClick}>
             {props.payload.hostLoading ? "Host..." : "Host"}
           </button>

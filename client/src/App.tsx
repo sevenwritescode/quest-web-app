@@ -38,11 +38,11 @@ function LandingScreen() {
 
   const isCurrentlyLoading =  payload.hostLoading || payload.joinLoading;
 
-  // useEffect(() => {
-  //   if (location.state?.error) {
-  //     navigate(location.pathname, { replace: true, state: undefined });
-  //   }
-  // }, [location.state?.error]);
+  useEffect(() => {
+    if (location.state?.error) {
+      navigate(location.pathname, { replace: true, state: undefined });
+    }
+  }, [location.state?.error]);
 
   const onHostClick = async () => {
     if (isCurrentlyLoading) {

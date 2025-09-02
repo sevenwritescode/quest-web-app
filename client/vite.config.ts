@@ -11,15 +11,18 @@ export default defineConfig({
   server: {
     port: 5173,                // your dev-server port
     proxy: {
+      // REST
       '/api': {
         target: 'http://localhost:4000',
         changeOrigin: true,
         secure: false,
       },
+      // socket.io WS upgrade
       '/socket.io': {
-        target: 'http://localhost:4001',
-        ws: true
-      }
+        target: 'ws://localhost:4000',
+        ws: true,
+        changeOrigin: true,
+      },
     }
   }
 })
