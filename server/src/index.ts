@@ -9,7 +9,7 @@ import cookie from "cookie";
 const router = express();
 // Determine ports for HTTP (Express) and Socket.IO servers
 const HTTP_PORT = Number(process.env.PORT) || 4000;
-const SOCKET_PORT = (Number(process.env.PORT) + 1) || 4001;
+// const SOCKET_PORT = (Number(process.env.PORT) + 1) || 4001;
 router.use(express.json());
 router.use(cookieParser());
 
@@ -119,7 +119,7 @@ io.on("connection", (socket) => {
 
 });
 
-httpServer.listen(SOCKET_PORT, () => {
-  console.log(`🚀 Socket.IO server listening on http://0.0.0.0:${SOCKET_PORT}`);
-});
+// httpServer.listen(SOCKET_PORT, () => {
+//   console.log(`🚀 Socket.IO server listening on http://0.0.0.0:${SOCKET_PORT}`);
+// });
 
