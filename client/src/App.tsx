@@ -14,7 +14,11 @@ import { io, Socket } from "socket.io-client"
 export type Player       = { id: string; name: string }
 
 export type LandingState    = { code: string, error?: string, hostLoading: boolean, joinLoading: boolean }
-export type RoomClientState = { players: Player[], clientId: string, hostId: string }
+export type RoomClientState = { 
+  players: Player[], 
+  clientId: string, 
+  hostId: string 
+}
 
 // 1) Top-level router
 export default function App() {
@@ -61,24 +65,10 @@ function LandingScreen() {
     catch (e: any) {
       doPayloadChange({error: e.message || "Failed to Create Room"})
     }
-    doPayloadChange({ hostLoading: false});
+    doPayloadChange({ hostLoading: false });
   }
 
   const onJoinClick = async () => {
-    // try {
-    //   const res = await fetch(`/api/rooms/${payload.code}/join`, {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     credentials: 'include',            // << tell the browser to store/send cookies
-    //     body: JSON.stringify({ code: payload.code })
-    //   })
-    //   if (!res.ok) throw await res.text()
-    //   // server should Set-Cookie: sessionId=…; HttpOnly
-    //   navigate(`/room/${payload.code}`)
-    // } catch (e:any) {
-    //   setError(e.toString())
-    // }
-    // doPayloadChange({error: "join -- server is not hooked up yet"});
     if (payload.code === "")
     {
       return;
@@ -99,47 +89,57 @@ function LandingScreen() {
 // 3) RoomScreen: same URL for lobby & game. we fetch /state and the server tells us which page
 function RoomScreen() {
   const { code }= useParams<{ code: string }>()
-  console.log(`code: ${code}`)
 
   const [payload, setPayload] = useState<RoomClientState>({ players: [], hostId: "", clientId: ""});
 
-  const navigate              = useNavigate()
+  const navigate              = useNavigate();  
   
   const doPayloadChange = (patch: Partial<RoomClientState>) =>
     setPayload(p => ({ ...p, ...patch }))
 
   useEffect(() => {
-    const sock: Socket = io("/", {
-      path: "/socket.io",
-      withCredentials: true 
-    });
+    
+    (async () => {
+      await fetch("/api/session", { credentials: "include" });
 
-    sock.on("connect_error", (err: any) => {
-      console.error("socket connect_error:", err);
-    });
+      const sock: Socket = io("/", {
+        path: "/socket.io",
+        withCredentials: true 
+      });
 
-    sock.on("connect", () => {
-      sock.emit("join", { code });
-    });
+      sock.on("connect_error", (err: any) => {
+        console.error("socket connect_error:", err?.message);
+        navigate("/", {
+          replace: true,
+          state: { error: String(err || "Connection error") }
+        })
+      });
 
-    sock.on("roomState", (state: RoomClientState) => {
-      doPayloadChange(state);
-    });
+      sock.on("connect", () => {
+        sock.emit("join", { code });
+      });
 
-    sock.on("error", (err: any) => {
-      console.log("socket error:", err)
-      sock.disconnect()
-      navigate("/", {
-        replace: true,
-        state: { error: String(err || "Connection error") }
-      })
-    });
+      sock.on("roomState", (state: RoomClientState) => {
+        doPayloadChange(state);
+      });
 
-    return () => {
-      sock.off(); // remove handlers
-      sock.disconnect();
-    };
+      sock.on("error", (err: any) => {
+        console.log("socket error:", err)
+        sock.disconnect()
+        navigate("/", {
+          replace: true,
+          state: { error: String(err || "Connection error") }
+        })
+      });
+
+      return () => {
+        sock.off(); // remove handlers
+        sock.disconnect();
+      };
+    })()
+
+    
   }, [code]);
 
-  return <Room payload={payload}/>
+  return <Room payload={payload} doPayloadChange={doPayloadChange}/>
 }

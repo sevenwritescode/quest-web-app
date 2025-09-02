@@ -3,7 +3,6 @@ import { v4 as uuid } from 'uuid';
 import path, { dirname } from "path";
 import cookieParser from "cookie-parser";
 import http from "http";
-import fs from "fs"
 import { Server } from "socket.io";
 import { randomBytes } from "crypto"
 import cookie from "cookie";
@@ -72,6 +71,13 @@ app.get("/api/get-rooms-info", (_req, res) => {
   res.json(rooms);
 });
 
+app.get("/api/session", (req, res) => {
+  // your existing getSessionAuth will either return an existing
+  // cookie value, or set a new one for you.
+  const auth = getSessionAuth(req, res);
+  res.json({ sessionAuth: auth });
+});
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname  = dirname(__filename)
 
@@ -83,9 +89,14 @@ const io = new Server(server, { path: "/socket.io" });
 io.use((socket, next) => {
   const raw = socket.handshake.headers.cookie || "";
   const cookies = cookie.parse(raw);
-  const sessionAuth = cookies.sessionAuth;
-  console.log("io.use");
-  if (!sessionAuth) return next(new Error("Unauthorized - missing sessionAuth"));
+  let sessionAuth = cookies.sessionAuth;
+  
+  if (!sessionAuth) {
+    // if no cookie, create one just like your HTTP handler does
+    const req = socket.request as express.Request
+    const res = (req as any).res as express.Response
+    sessionAuth = getSessionAuth(req, res)
+  }
 
   socket.data.sessionAuth = sessionAuth;
   next();
@@ -114,16 +125,14 @@ io.on("connection", (socket) => {
     }
 
     socket.join(code);
-    io.to(code).emit("lobbyState", { players: room.players });
+    io.to(code).emit("roomState", { players: room.players });
   });
-
-
 });
 
 if (process.env.NODE_ENV === "production") {
   const clientDistPath = path.join(__dirname, "../../client/dist");
   app.use(express.static(clientDistPath));
-  app.get("/{*catchall}", (_req, res) => {
+  app.get("/{*catchall}", (_req, res) => {  
     res.sendFile(path.join(clientDistPath, "index.html"));
   });
 }
