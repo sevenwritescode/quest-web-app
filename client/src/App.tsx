@@ -100,14 +100,12 @@ function RoomScreen() {
   const sockRef = useRef<Socket|null>(null);
   
   useEffect(() => {
-    (async () => {
-      await fetch("/api/session", { credentials: "include" });
-
-      const sock = io("/", {
+    const sock = io("/", {
         path: "/socket.io",
         withCredentials: true 
       });
       sockRef.current = sock;
+      console.log(code)
 
       sock.on("connect_error", (err: any) => {
         console.error("socket connect_error:", err?.message);
@@ -141,7 +139,7 @@ function RoomScreen() {
           sock.disconnect();
         }
       };
-    })() 
+    
   }, [code]);
 
   const doChangeName = (newName: string) => {

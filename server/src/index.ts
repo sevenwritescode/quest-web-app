@@ -92,10 +92,8 @@ io.use((socket, next) => {
   let sessionAuth = cookies.sessionAuth;
   
   if (!sessionAuth) {
-    // if no cookie, create one just like your HTTP handler does
-    const req = socket.request as express.Request
-    const res = (req as any).res as express.Response
-    sessionAuth = getSessionAuth(req, res)
+    socket.emit("error", "Invalid Session Auth");
+    return;
   }
 
   socket.data.sessionAuth = sessionAuth;
@@ -124,7 +122,7 @@ io.on("connection", (socket) => {
     }
 
     socket.join(code);
-    io.to(code).emit("roomStateUpdate", { players: room.players });
+    io.to(code).emit("roomStateUpdate", { players: room.players, clientId });
   });
 
   socket.on("changeName", ({ newName, code }: { newName: string, code: string }) => {
@@ -145,13 +143,14 @@ io.on("connection", (socket) => {
   })
 });
 
-if (process.env.NODE_ENV === "production") {
-  const clientDistPath = path.join(__dirname, "../../client/dist");
-  app.use(express.static(clientDistPath));
-  app.get("/{*catchall}", (_req, res) => {  
-    res.sendFile(path.join(clientDistPath, "index.html"));
-  });
-}
+
+const clientDistPath = path.join(__dirname, "../../client/dist");
+app.use(express.static(clientDistPath)); 
+app.get("/{*catchall}", (_req, res) => {
+  getSessionAuth(_req,res);  
+  res.sendFile(path.join(clientDistPath, "index.html"));
+});
+
 
 
 server.listen(PORT, () => {

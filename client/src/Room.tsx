@@ -1,6 +1,6 @@
 // import React from "react";
 import type { RoomClientState } from "./App";
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 
 
 interface RoomProps {
@@ -10,62 +10,58 @@ interface RoomProps {
 }
 
 export default function Room(props: RoomProps) {
-    const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
-    const [tempName, setTempName] = useState<string>("");
+    const { payload, onChangeName } = props;
+    const { players, clientId } = payload;
+    const [newName, setNewName] = useState(() => {
+        const me = players.find(p => p.id === clientId);
+        return me?.name || "";
+    });
 
-    console.log(props)
+    useEffect(() => {
+        const me = players.find(p => p.id === clientId);
+        if (me) {
+            setNewName(me.name);
+        }
+    }, [players, clientId]);
+
+    const handleNameChange = () => {
+        const trimmed = newName.trim();
+        if (trimmed) {
+            onChangeName(trimmed);
+        }
+    };
+
+    
+        console.log(props)
     return (
-        <div className="flex justify-center align-middle">
-            {props.payload.players.map(player => (
+        <div className="h-screen w-screen flex flex-wrap justify-center items-center">
+            {players.map(player => (
                 <div
                     key={player.id}
-                    className="d-flex flex-column justify-content-center align-items-center m-2 p-3"
-                    style={{ width: "4000px", backgroundColor: "#959595ff", borderRadius: "4px" }}
+                    className="border rounded-lg p-4 m-2 w-48 h-32 flex flex-col items-center justify-center"
                 >
-                    <div className="d-flex align-items-center">
-                        {editingPlayerId === player.id ? (
+                    {player.id === clientId ? (
+                        <>
                             <input
                                 type="text"
-                                className="form-control me-2"
-                                value={tempName}
-                                onChange={e => setTempName(e.target.value)}
-                                onKeyDown={e => {
-                                    if (e.key === "Enter") {
-                                        props.onChangeName(tempName);
-                                        setEditingPlayerId(null);
-                                    }
-                                }}
-                                autoFocus
+                                value={newName}
+                                onChange={e => setNewName(e.target.value)}
+                                className="border px-2 py-1 rounded mb-2 w-full text-center"
                             />
-                        ) : (
-                            <>
-                                <span>
-                                    {player.name}
-                                </span>
-                                <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-primary ms-2"
-                                    onClick={() => {
-                                        setEditingPlayerId(player.id);
-                                        setTempName(player.name);
-                                    }}
-                                >
-                                    Edit
-                                </button>
-                            </>
-                        )}
-                    </div>
-
-                    {player.id === props.payload.clientId && (
-                        <span className="badge bg-primary mt-1">You</span>
-                    )}
-                    {player.id === props.payload.hostId && (
-                        <span className="badge bg-secondary mt-1">Host</span>
+                            <button
+                                onClick={handleNameChange}
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
+                            >
+sdf                            </button>
+                            <span className="text-sm text-gray-500 mt-1">you</span>
+                        </>
+                    ) : (
+                        <span className="text-lg font-medium">{player.name}</span>
                     )}
                 </div>
             ))}
         </div>
-        );
+    );
 }
 
 
