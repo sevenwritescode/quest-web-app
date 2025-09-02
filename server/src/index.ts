@@ -75,6 +75,18 @@ app.get("/api/get-rooms-info", (_req, res) => {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname  = dirname(__filename)
 
+
+const origUse = app.use.bind(app)
+app.use = function (path: any, ...rest: any) {
+  console.log('app.use called with:', path)
+  return origUse(path, ...rest)
+}
+const origGet = app.get.bind(app)
+app.get = function (path: any, ...rest: any) {
+  console.log('app.get called with:', path)
+  return origGet(path, ...rest)
+}
+
 const clientDistPath = path.join(__dirname, "../../client/dist")
 console.log(clientDistPath)
 if (process.env.NODE_ENV === "production" && fs.existsSync(clientDistPath)) {
