@@ -107,7 +107,6 @@ io.on("connection", (socket) => {
 
   socket.on("join", ({ code }: { code: string }) => {
     const room = rooms[code];
-    console.log(`attempt to join: ${code}`);
     if (!room) {
       socket.emit("error", "Room not found");
       return;
@@ -125,8 +124,25 @@ io.on("connection", (socket) => {
     }
 
     socket.join(code);
-    io.to(code).emit("roomState", { players: room.players });
+    io.to(code).emit("roomStateUpdate", { players: room.players });
   });
+
+  socket.on("changeName", ({ newName, code }: { newName: string, code: string }) => {
+    const room = rooms[code];
+    if (!room) {
+      socket.emit("error", "Code not associated with room");
+      return;
+    }
+    console.log(room.players)
+    let player = room.players.filter((p) => p.id === room.authToId[socket.data.sessionAuth])[0];
+    if (!player) {
+      socket.emit("error","Player does not exist in this room")
+      return;
+    } 
+    player.name = newName;
+    console.log(room.players)
+    io.to(code).emit("roomStateUpdate", { players: room.players });
+  })
 });
 
 if (process.env.NODE_ENV === "production") {

@@ -1,5 +1,5 @@
 // App.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Routes,
   Route,
@@ -97,15 +97,17 @@ function RoomScreen() {
   const doPayloadChange = (patch: Partial<RoomClientState>) =>
     setPayload(p => ({ ...p, ...patch }))
 
+  const sockRef = useRef<Socket|null>(null);
+  
   useEffect(() => {
-    
     (async () => {
       await fetch("/api/session", { credentials: "include" });
 
-      const sock: Socket = io("/", {
+      const sock = io("/", {
         path: "/socket.io",
         withCredentials: true 
       });
+      sockRef.current = sock;
 
       sock.on("connect_error", (err: any) => {
         console.error("socket connect_error:", err?.message);
@@ -119,7 +121,7 @@ function RoomScreen() {
         sock.emit("join", { code });
       });
 
-      sock.on("roomState", (state: RoomClientState) => {
+      sock.on("roomStateUpdate", (state: Partial<RoomClientState>) => {
         doPayloadChange(state);
       });
 
@@ -133,13 +135,23 @@ function RoomScreen() {
       });
 
       return () => {
-        sock.off(); // remove handlers
-        sock.disconnect();
+        const sock = sockRef.current;
+        if (sock) {
+          sock.off();
+          sock.disconnect();
+        }
       };
-    })()
-
-    
+    })() 
   }, [code]);
 
-  return <Room payload={payload} doPayloadChange={doPayloadChange}/>
+  const doChangeName = (newName: string) => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    sock.emit("changeName", { newName, code })
+  }
+
+  return <Room payload={payload} doPayloadChange={doPayloadChange} onChangeName={doChangeName}/>
 }
