@@ -100,10 +100,12 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(clientDistPath)) {
   console.log("🛠  Skipping static-serve (dev mode or no dist folder)")
 }
 
+console.log(1);
 
 const server = http.createServer(app);
 const io = new Server(server, { path: "/socket.io" });
 
+console.log(2);
 
 io.use((socket, next) => {
   const raw = socket.handshake.headers.cookie || "";
@@ -115,6 +117,8 @@ io.use((socket, next) => {
   socket.data.sessionAuth = sessionAuth;
   next();
 });
+
+console.log(3)
 
 io.on("connection", (socket) => {
   console.log(`⚡ Socket connected: ${socket.id}`);
@@ -144,6 +148,8 @@ io.on("connection", (socket) => {
 
 
 });
+
+console.log(4)
 
 server.listen(PORT, () => {
   console.log(`🚀 HTTP + Websockets on port ${PORT}`)
