@@ -133,18 +133,14 @@ io.on("connection", (socket) => {
 
 });
 
-console.log(1)
 if (process.env.NODE_ENV === "production") {
-  console.log(2)
   const clientDistPath = path.join(__dirname, "../../client/dist");
-  console.log(3)
   app.use(express.static(clientDistPath));
-  console.log(4)
-  app.get("*", (_req, res) => {
+  app.get("/{*catchall}", (_req, res) => {
     res.sendFile(path.join(clientDistPath, "index.html"));
   });
-  console.log(5)
 }
+
 
 server.listen(PORT, () => {
   console.log(`🚀 HTTP + Websockets on port ${PORT}`)
