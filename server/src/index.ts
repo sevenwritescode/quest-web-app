@@ -123,7 +123,7 @@ io.on("connection", (socket) => {
 
     socket.join(code);
     socket.emit("roomStateUpdate", { clientId });
-    io.to(code).emit("roomStateUpdate", { players: room.players });
+    io.to(code).emit("roomStateUpdate", { players: room.players, hostId: clientId });
   });
 
   socket.on("changeName", ({ newName, code }: { newName: string, code: string }) => {
