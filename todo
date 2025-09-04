@@ -1,1 +1,4 @@
-- socket doesn't work in production
+- capitalize room when someone inputs it into the url
+- add game log (different from error/debugging log) that 
+  - broadcasts changes to the game both privately and publicly
+- every so often clear empty rooms

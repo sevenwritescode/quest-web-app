@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import type { LandingState } from "./App"
+import "./css/Landing.css"
 
 interface LandingProps {
   payload: LandingState,
@@ -40,60 +41,45 @@ export default function Landing(props: LandingProps) {
     props.doPayloadChange({ code: input })
   }
 
-  return (
+  return ( 
     <>
-      {/* flash‐type error banner */}
-      <div
-        className={
-          "fixed top-4 left-1/2 -translate-x-1/2 " +
-          "bg-red-600 text-white px-4 py-2 rounded shadow-lg " +
-          "transition-opacity " +
-          // show instantly, fade out over 500ms
-          (errorVisible
-            ? "opacity-100 duration-0"
-            : "opacity-0 duration-500")
-        }
-      >
+      {/* flash-type error banner */}
+      <div className={`error-banner ${errorVisible ? 'error-visible' : 'error-hidden'}`}>
         {props.payload.error}
       </div>
 
       {/* rest of your landing page */}
-      <div className="flex justify-center text-center align-middle text-shadow-[0px_4px_8px_rgba(0,0,0,0.75)] font-serif text-5xl p-10">
+      <div className="landing-section">
         <h1>
-          The{" "}
-          <span className="font-[Chomsky] text-6xl text-[rgb(213,4,4)]">
-            Quest
-          </span>{" "}
-          Companion App
+          The <span className="title-highlight">Quest</span> Companion App
         </h1>
       </div>
 
-        <div className="flex justify-center space-x-6 items-center font-[Consolas]">
-          <button className={`h-12 w-28  text-white rounded m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl shadow-xl
-          ${props.payload.hostLoading ? "bg-[rgb(184,77,0)]" : "bg-[rgb(230,97,2)] hover:bg-[rgb(184,77,0)]"}`}
-          
-          onClick={props.doHostClick}>
-            {props.payload.hostLoading ? "Host..." : "Host"}
+      <div className="controls">
+        <button
+          className={`host-button${props.payload.hostLoading ? ' loading' : ''}`}
+          onClick={props.doHostClick}
+        >
+          {props.payload.hostLoading ? 'Host...' : 'Host'}
+        </button>
+
+        <div className="join-container">
+          <button
+            className={`join-button${props.payload.joinLoading ? ' loading' : ''}`}
+            onClick={props.doJoinClick}
+          >
+            <input
+              type="text"
+              value={props.payload.code}
+              onClick={e => e.stopPropagation()}
+              onChange={validateCodeInput}
+              className="join-input"
+              placeholder="----"
+            />
+            Join
           </button>
-          <div className="flex items-center space-x-2 m-2">
-            <button
-              className={`h-12 p-2 text-white rounded  m-1 flex items-center justify-center font-mono text-shadow-lg text-2xl shadow-xl
-              ${props.payload.joinLoading ? "bg-green-700" : "bg-green-600 hover:bg-green-700"}`}
-              onClick={props.doJoinClick}
-            >
-              <input
-                type="text"
-                size={4}
-                onClick={(e) => e.stopPropagation()}
-                value={props.payload.code}
-                onChange={validateCodeInput}
-                className="rounded bg-green-800 h-8 px-2 mr-2 text-left placeholder-gray-400 focus:outline-none"
-                placeholder="----"
-              />
-              Join
-            </button>
-          </div>
         </div>
+      </div>
     </>
-  )
+  );
 }

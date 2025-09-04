@@ -122,9 +122,13 @@ io.on("connection", (socket) => {
     }
 
     socket.join(code);
-    socket.emit("roomStateUpdate", { clientId });
-    io.to(code).emit("roomStateUpdate", { players: room.players, hostId: clientId });
+    socket.emit("roomStateUpdate", { clientId, hostId: room.hostId });
+    io.to(code).emit("roomStateUpdate", { players: room.players  });
   });
+
+  // add leave room
+
+  // add kick player from room
 
   socket.on("changeName", ({ newName, code }: { newName: string, code: string }) => {
     const room = rooms[code];

@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Della+Respira&display=swap');
+
+@font-face {
+  font-family: 'Chomsky';
+  src: url('/fonts/Chomsky.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'GothicPixels';
+  src: url('/fonts/GothicPixels.ttf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.phone-wrapper {
+  width: 100%;    
+  height: auto;
+}
+
+@media (orientation: landscape) {
+  .phone-wrapper {
+    /* enforce a 16:9 box that never exceeds the viewport */
+    aspect-ratio: 1;
+
+    /* if the viewport is VERY wide ( AR ≥ 16/9 ) we limit width by height*16/9  
+    otherwise we limit width by 100vw.  */  
+    width: min(  
+      calc(100vh * 1),  
+      100vw  
+    );  
+
+    /* center it horizontally if it didn’t fill the whole width */  
+    margin: 0 auto;
+    padding: 0vh 0vw;
+  }
+}
+
+:root {
+  color: white;
+  background-color: rgb(80, 80, 80);
+  font-size: 1.2rem;
+}
+

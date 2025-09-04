@@ -1,6 +1,9 @@
 // import React from "react";
 import type { RoomClientState } from "./App";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import "./css/index.css";
+import "./css/Room.css";
+import gear_icon from './assets/Gear_icon_svg.svg';
 
 
 interface RoomProps {
@@ -10,59 +13,47 @@ interface RoomProps {
 }
 
 export default function Room(props: RoomProps) {
-    const { payload, onChangeName } = props;
-    const { players, clientId } = payload;
-    const [newName, setNewName] = useState(() => {
-        const me = players.find(p => p.id === clientId);
-        return me?.name || "";
-    });
+    // const testPlayers = useMemo(() => {
+    //     // 1) clone
+    //     const cloned = props.payload.players.map(p => ({ ...p }))
+    //     // 2) add 10 random
+    //     for (let i = 0; i < 10; i++) {
+    //     const id   = Math.random().toString(36).substr(2, 8)
+    //     const name = Array.from({ length: 5 })
+    //         .map(() => Math.random().toString(36).charAt(2))
+    //         .join('')
+    //     cloned.push({ id, name })
+    //     }
+    //     return cloned
+    // }, [props.payload.players])
 
-    useEffect(() => {
-        const me = players.find(p => p.id === clientId);
-        if (me) {
-            setNewName(me.name);
-        }
-    }, [players, clientId]);
+    return (<>
+    <div className="settings-button" onClick={() => {
+        console.log("Setting: TODO ");
+    }} >
+        <img src={gear_icon} alt="Gear Icon -- Settings Button" />
+    </div>
 
-    const handleNameChange = () => {
-        const trimmed = newName.trim();
-        if (trimmed) {
-            onChangeName(trimmed);
-        }
-    };
-
-    
-    console.log(props.payload)
-    return (
-        <div className="h-screen w-screen flex flex-wrap justify-center items-center">
-            {players.map(player => (
-                <div
-                    key={player.id}
-                    className="border rounded-lg p-4 m-2 w-48 h-32 flex flex-col items-center justify-center"
-                >
-                    {player.id === clientId ? (
-                        <>
-                            <input
-                                type="text"
-                                value={newName}
-                                onChange={e => setNewName(e.target.value)}
-                                className="border px-2 py-1 rounded mb-2 w-full text-center"
-                            />
-                            <button
-                                onClick={handleNameChange}
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
-                            >
-                                Save
-                            </button>
-                            <span className="text-sm text-gray-500 mt-1">you</span>
-                        </>
-                    ) : (
-                        <span className="text-lg font-medium">{player.name}</span>
-                    )}
+    <div className="player-list">
+        {props.payload.players.map((player, index) => (
+            <div className="player-container" key={player.id ?? index}>
+                <div className="player-item"> 
+                    {player.name !== undefined
+                        ? <div className="player-name">{player.name}</div>
+                        : <div className="anonymous">Anonymous</div>
+                    }
+                    <div className="player-badges"> 
+                        {props.payload.hostId === player.id && (
+                        <div className="host-indicator">
+                            Host
+                        </div>
+                        )}
+                    </div>
                 </div>
-            ))}
-        </div>
-    );
+            </div>
+        ))}
+    </div>
+    </>);
 }
 
 

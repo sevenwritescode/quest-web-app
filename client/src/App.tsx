@@ -10,8 +10,9 @@ import {
 import Landing from './Landing'
 import Room from './Room';
 import { io, Socket } from "socket.io-client"
+import { Navigate } from 'react-router-dom'
 
-export type Player       = { id: string; name: string }
+export type Player       = { id: string; name?: string }
 
 export type LandingState    = { code: string, error?: string, hostLoading: boolean, joinLoading: boolean }
 export type RoomClientState = { 
@@ -26,6 +27,7 @@ export default function App() {
     <Routes>
       <Route path="/"           element={<LandingScreen/>}/>
       <Route path="/room/:code" element={<RoomScreen/>}  />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
@@ -88,7 +90,7 @@ function LandingScreen() {
 
 // 3) RoomScreen: same URL for lobby & game. we fetch /state and the server tells us which page
 function RoomScreen() {
-  const { code }= useParams<{ code: string }>()
+  const { code } = useParams<{ code: string }>()
 
   const [payload, setPayload] = useState<RoomClientState>({ players: [], hostId: "", clientId: ""});
 
@@ -100,6 +102,15 @@ function RoomScreen() {
   const sockRef = useRef<Socket|null>(null);
   
   useEffect(() => {
+    if (code === "" || code === undefined) {
+      navigate("/") 
+      return;
+    } 
+    if (code !== code.toUpperCase()) {
+      navigate(`/room/${code.toUpperCase()}`);
+      return;
+    }
+
     const sock = io("/", {
         path: "/socket.io",
         withCredentials: true 
