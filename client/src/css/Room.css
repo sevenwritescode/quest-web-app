@@ -1,6 +1,10 @@
 .settings-button {
+    position: absolute; 
     width: 2.5rem;
     margin: 0.5rem;
+    top: 0rem;
+    left: 0rem;
+    z-index: 1000; 
 }
 
 .settings-button img {
@@ -9,12 +13,34 @@
     width: 100%;
 }
 
+.code-container {
+    position: absolute;
+    top: 0rem;
+    right: 0rem;
+    z-index: 1000;
+}
+
+.qr-code-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-color: #000;
+    border: 2px solid #000;
+    border-radius: 0.5rem;
+    border-radius: 1rem;
+    padding: 1rem;
+    z-index: 2000;
+}
+
 .player-list {
     display: flex;
     justify-items: center;
     align-items: center;
     flex-direction: column;
     gap: 0.4em;
+    margin-top: 3rem;
+    overflow-y: auto;
 }
 
 

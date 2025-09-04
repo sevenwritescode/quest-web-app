@@ -15,7 +15,8 @@ import { Navigate } from 'react-router-dom'
 export type Player       = { id: string; name?: string }
 
 export type LandingState    = { code: string, error?: string, hostLoading: boolean, joinLoading: boolean }
-export type RoomClientState = { 
+export type RoomClientState = {
+  code: string,
   players: Player[], 
   clientId: string, 
   hostId: string 
@@ -91,8 +92,10 @@ function LandingScreen() {
 // 3) RoomScreen: same URL for lobby & game. we fetch /state and the server tells us which page
 function RoomScreen() {
   const { code } = useParams<{ code: string }>()
+  if (code === undefined)
+    throw new Error("Room Code is undefined");
 
-  const [payload, setPayload] = useState<RoomClientState>({ players: [], hostId: "", clientId: ""});
+  const [payload, setPayload] = useState<RoomClientState>({ code, players: [], hostId: "", clientId: ""});
 
   const navigate              = useNavigate();  
   

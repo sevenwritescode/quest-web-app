@@ -1,4 +1,12 @@
-- capitalize room when someone inputs it into the url
 - add game log (different from error/debugging log) that 
   - broadcasts changes to the game both privately and publicly
 - every so often clear empty rooms
+
+- settings 
+  - room settings
+    - change name, leave, become spectator
+    - host can kick, change peoples names, make people spectator, and make people players
+    - host can change default for if someone joins as spectator or not
+    - host can require password
+  - game settings
+  

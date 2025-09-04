@@ -1,9 +1,10 @@
 // import React from "react";
 import type { RoomClientState } from "./App";
-// import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import "./css/index.css";
 import "./css/Room.css";
 import gear_icon from './assets/Gear_icon_svg.svg';
+import QRCode from "react-qr-code";
 
 
 interface RoomProps {
@@ -26,6 +27,7 @@ export default function Room(props: RoomProps) {
     //     }
     //     return cloned
     // }, [props.payload.players])
+    const [displayQRCode,setDisplayQRCode] = useState(false);
 
     return (<>
     <div className="settings-button" onClick={() => {
@@ -33,6 +35,27 @@ export default function Room(props: RoomProps) {
     }} >
         <img src={gear_icon} alt="Gear Icon -- Settings Button" />
     </div>
+
+    <div className="code-container" onClick={() => {setDisplayQRCode(true)}}>
+        Code: {props.payload.code}
+    </div>
+
+    {displayQRCode && (
+        <div className="qr-code-container">
+            <button
+                className="qr-code-escape"
+                onClick={() => setDisplayQRCode(false)}
+            >
+                Close
+            </button>
+            <QRCode
+                value={window.location.href}
+                size={128}
+                level="H"
+            />
+        </div>
+    )}
+    
 
     <div className="player-list">
         {props.payload.players.map((player, index) => (

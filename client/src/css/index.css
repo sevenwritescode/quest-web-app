@@ -17,6 +17,11 @@
 .phone-wrapper {
   width: 100%;    
   height: auto;
+
+  margin: 0 auto;
+  padding: 0vh 0vw;
+  position: relative; 
+  display: flow-root;  
 }
 
 @media (orientation: landscape) {
@@ -32,12 +37,10 @@
     );  
 
     /* center it horizontally if it didn’t fill the whole width */  
-    margin: 0 auto;
-    padding: 0vh 0vw;
   }
 }
 
-:root {
+:root {     
   color: white;
   background-color: rgb(80, 80, 80);
   font-size: 1.2rem;
