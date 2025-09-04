@@ -1,6 +1,6 @@
 // import React from "react";
 import type { RoomClientState } from "./App";
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import "./css/index.css";
 import "./css/Room.css";
 import gear_icon from './assets/Gear_icon_svg.svg';
