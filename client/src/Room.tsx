@@ -51,7 +51,8 @@ export default function Room(props: RoomProps) {
             <QRCode
                 value={window.location.href}
                 size={128}
-                level="H"
+                level="L"
+                
             />
         </div>
     )}
