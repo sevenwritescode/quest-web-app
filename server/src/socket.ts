@@ -5,11 +5,13 @@ import { v4 as uuid } from 'uuid';
 
 
 function broadcastRoomClientStates(room: Room) {
+  console.log(room);
   for (const player of room.server.players) {
-      io.to(player.id).emit("roomStateUpdate", 
-        room.clients.find((p) => p.clientId === player.id)
-      );
-    }
+    
+    io.to(player.id).emit("roomStateUpdate", 
+      room.clients.find((p) => (p.clientId === player.id))
+    );
+  }
 }
 
 export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {
@@ -55,6 +57,7 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     }
 
     const clientId = room.server.authToId[socket.data.sessionAuth] as string;
+    socket.join([code,clientId]);
 
     //validate name, or if invalid, set it to undefined
     if (!isValidName(name)) { name = undefined; }
@@ -72,7 +75,6 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
       }
       broadcastRoomClientStates(room);
       socket.emit("logMessage", `reconnected to room ${code}`); 
-      socket.emit("roomStateUpdate",room.clients.find((p) => p.clientId === clientId)); 
       return;
     }
 
@@ -91,7 +93,6 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
         allegianceKnown: true } );
     }
     
-    socket.join([code,clientId]);
     broadcastRoomClientStates(room);
     io.to(code).emit("logMessage", `${(name === undefined) ? "Anonymous" : name} joined the room.`);
   });

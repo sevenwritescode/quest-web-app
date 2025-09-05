@@ -159,6 +159,7 @@ function RoomScreen() {
     });
 
     sock.on("roomStateUpdate", (state: Partial<RoomClientState>) => {
+      console.log("here");
       doPayloadChange(state);
     });
 
