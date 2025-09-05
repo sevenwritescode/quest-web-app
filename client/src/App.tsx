@@ -6,7 +6,7 @@ import {
   useNavigate,
   useParams,
   useLocation,
-  useNavigationType
+  // useNavigationType
 } from 'react-router-dom'
 import Landing from './Landing'
 import Room from './Room';
