@@ -12,14 +12,24 @@ import Room from './Room';
 import { io, Socket } from "socket.io-client"
 import { Navigate } from 'react-router-dom'
 
-export type Player       = { id: string; name?: string }
+export type LandingState    = { 
+  name: string,
+  code: string, 
+  error?: string, 
+  hostLoading: boolean, 
+  joinLoading: boolean 
+}
 
-export type LandingState    = { code: string, error?: string, hostLoading: boolean, joinLoading: boolean }
+export type Role = "Spectator"
+export type Player       = { id: string; name?: string; Role?: Role, roleKnown: boolean, allegianceKnown: boolean}
+
 export type RoomClientState = {
   code: string,
   players: Player[], 
   clientId: string, 
-  hostId: string 
+  hostId: string,
+  log: {string: string, color: string}[],
+  error?: string, 
 }
 
 // 1) Top-level router
@@ -37,7 +47,7 @@ export default function App() {
 function LandingScreen() {
   const navigate              = useNavigate()
   const location = useLocation()
-  const [payload, setPayload] = useState<LandingState>({ code: '', hostLoading: false, joinLoading: false, error: location?.state?.error })
+  const [payload, setPayload] = useState<LandingState>({ code: '', name: '', hostLoading: false, joinLoading: false, error: location?.state?.error })
 
   const doPayloadChange = (patch: Partial<LandingState>) =>
     setPayload(p => ({ ...p, ...patch }))
@@ -62,8 +72,8 @@ function LandingScreen() {
         credentials: 'include'
       });
       if (!res.ok) throw {message: `${res.status}: ${await res.text()}`};
-      const { code, } = await res.json() as { code: string, };
-      navigate(`/room/${code}`);
+      const { code } = await res.json() as { code: string, };
+      navigate(`/room/${code}`,{ state: { name: payload.name } });
     }
     catch (e: any) {
       doPayloadChange({error: e.message || "Failed to Create Room"})
@@ -76,7 +86,7 @@ function LandingScreen() {
     {
       return;
     }
-    navigate(`/room/${payload.code}`)
+    navigate(`/room/${payload.code}`, { state: { name: payload.name } })
   }
 
   return (
@@ -95,9 +105,11 @@ function RoomScreen() {
   if (code === undefined)
     throw new Error("Room Code is undefined");
 
-  const [payload, setPayload] = useState<RoomClientState>({ code, players: [], hostId: "", clientId: ""});
+  const [payload, setPayload] = useState<RoomClientState>({ code, players: [], hostId: "", clientId: "", log: []});
 
   const navigate              = useNavigate();  
+  const location = useLocation();
+    
   
   const doPayloadChange = (patch: Partial<RoomClientState>) =>
     setPayload(p => ({ ...p, ...patch }))
@@ -112,6 +124,14 @@ function RoomScreen() {
     if (code !== code.toUpperCase()) {
       navigate(`/room/${code.toUpperCase()}`);
       return;
+    }
+
+    let name: string | undefined = undefined;
+    if (location.state && typeof location.state.name === 'string') {
+      name = location.state.name;
+    }
+    if (name === "") {
+      name = undefined;
     }
 
     const sock = io("/", {
@@ -130,20 +150,28 @@ function RoomScreen() {
       });
 
       sock.on("connect", () => {
-        sock.emit("join", { code });
+        sock.emit("join", { name, code });
       });
 
       sock.on("roomStateUpdate", (state: Partial<RoomClientState>) => {
         doPayloadChange(state);
       });
 
+      sock.on("logMessage", (message: {string: string, color: string}) => {
+        payload.log.push(message);
+      });
+
       sock.on("error", (err: any) => {
-        console.log("socket error:", err)
-        sock.disconnect()
+        
+      });
+
+      sock.on("disconnect", (err: any) => {
+        console.log("socket error:", err);
+        sock.disconnect();
         navigate("/", {
           replace: true,
           state: { error: String(err || "Connection error") }
-        })
+        });
       });
 
       return () => {
@@ -162,7 +190,13 @@ function RoomScreen() {
       console.warn("socket not ready yet");
       return;
     }
-    sock.emit("changeName", { newName, code })
+    sock.emit("changeName", { newName, code });
+    navigate(location.pathname, {
+      replace: true,
+      state: {
+        name: newName
+      }
+    })
   }
 
   return <Room payload={payload} doPayloadChange={doPayloadChange} onChangeName={doChangeName}/>

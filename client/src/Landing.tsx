@@ -56,6 +56,18 @@ export default function Landing(props: LandingProps) {
       </div>
 
       <div className="controls">
+        <div className="name-input-container">
+          <div className="name-input-label"> 
+            Name:
+          </div>
+          <input 
+            type="text" 
+            value={props.payload.name}
+            onChange={(e) => props.doPayloadChange({name: e.target.value})}
+            className="name-input" 
+          />
+        </div>
+        
         <button
           className={`host-button${props.payload.hostLoading ? ' loading' : ''}`}
           onClick={props.doHostClick}

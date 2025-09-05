@@ -1,3 +1,28 @@
+.error-banner {
+  position: fixed;
+  top: 1rem;                    /* tailwind top-4 */
+  left: 50%;
+  transform: translateX(-50%);  /* -translate-x-1/2 */
+  background-color: #dc2626;    /* red-600 */
+  color: #fff;
+  padding: 0.5rem 1rem;         /* py-2 px-4 */
+  border-radius: 0.25rem;       /* rounded */
+  box-shadow:
+    0 10px 15px -3px rgba(0,0,0,0.1),
+    0 4px 6px -2px rgba(0,0,0,0.05); /* shadow-lg */
+  transition-property: opacity; /* transition-opacity */
+  font-family: monospace;
+  font-size: 1rem
+}
+.error-visible {
+  opacity: 1;
+  transition-duration: 0ms;     /* duration-0 */
+}
+.error-hidden {
+  opacity: 0;
+  transition-duration: 500ms;   /* duration-500 */
+}
+
 .settings-button {
     position: absolute; 
     width: 2.5rem;
@@ -57,20 +82,47 @@
     height: 3rem;
 }
 
-
-.anonymous {
+ .anonymous {
     font-style: italic;
     color: rgb(153, 153, 153);
+ }
+
+.spectator {  
+    color: rgb(197, 196, 196);
 }
 
-.player-name .anonymous {
-    flex: 0 0 70%;
-    text-align: center;
+.player-name, .anonymous {
+    flex: 0 0 33%;
+    text-align: left;
+}
+
+.role-name {
+    flex: 0 0 33%;
+    text-align: right;
 }
 
 .player-badges {
-    text-align: right;
-    font-weight: 600;
-    flex: 0 0 30%;
+    display: flex;
+    justify-content: right;
+    flex: 0 0 33%;
 }
+
+.host-badge, .you-badge
+{ 
+    flex: 0 0 45%;
+    padding: 0rem;
+}
+
+.host-badge {
+    
+    font-weight: 600;
+    text-align: right;
+}
+
+.you-badge {
+    text-align: right;
+}
+
+
+
 

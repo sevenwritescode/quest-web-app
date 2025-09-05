@@ -1,6 +1,6 @@
 // import React from "react";
 import type { RoomClientState } from "./App";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./css/index.css";
 import "./css/Room.css";
 import gear_icon from './assets/Gear_icon_svg.svg';
@@ -13,23 +13,37 @@ interface RoomProps {
    onChangeName: (newName: string) => void
 }
 
-export default function Room(props: RoomProps) {
-    // const testPlayers = useMemo(() => {
-    //     // 1) clone
-    //     const cloned = props.payload.players.map(p => ({ ...p }))
-    //     // 2) add 10 random
-    //     for (let i = 0; i < 10; i++) {
-    //     const id   = Math.random().toString(36).substr(2, 8)
-    //     const name = Array.from({ length: 5 })
-    //         .map(() => Math.random().toString(36).charAt(2))
-    //         .join('')
-    //     cloned.push({ id, name })
-    //     }
-    //     return cloned
-    // }, [props.payload.players])
+export default function Room(props: RoomProps) { 
     const [displayQRCode,setDisplayQRCode] = useState(false);
+    const [errorVisible, setErrorVisible] = useState(false);
+    
+    useEffect(() => {
+        let fadeTimer: ReturnType<typeof setTimeout>
+        let clearTimer: ReturnType<typeof setTimeout>
+
+        if (props.payload.error) {
+            // show immediately
+            setErrorVisible(true)
+            // after 2s, start fade-out
+            fadeTimer = setTimeout(() => setErrorVisible(false), 2000)
+            // after 2s + 0.5s (fade duration), clear the error in the parent
+            clearTimer = setTimeout(
+                () => props.doPayloadChange({ error: undefined }),
+                2500
+            )
+        }
+        return () => {
+        clearTimeout(fadeTimer)
+        clearTimeout(clearTimer)
+        }
+    }, [props.payload.error])
 
     return (<>
+
+    <div className={`error-banner ${errorVisible ? 'error-visible' : 'error-hidden'}`}>
+        {props.payload.error}
+    </div>
+
     <div className="settings-button" onClick={() => {
         console.log("Setting: TODO ");
     }} >
@@ -57,7 +71,7 @@ export default function Room(props: RoomProps) {
         </div>
     )}
     
-
+    
     <div className="player-list">
         {props.payload.players.map((player, index) => (
             <div className="player-container" key={player.id ?? index}>
@@ -66,12 +80,19 @@ export default function Room(props: RoomProps) {
                         ? <div className="player-name">{player.name}</div>
                         : <div className="anonymous">Anonymous</div>
                     }
+                    <div className={"role-name "
+                        + (player.Role === "Spectator" ? "spectator" : "")}>
+                            {player.Role}
+                    </div>
                     <div className="player-badges"> 
-                        {props.payload.hostId === player.id && (
-                        <div className="host-indicator">
-                            Host
-                        </div>
-                        )}
+                        {player.id === props.payload.clientId && 
+                            <div className={"you-badge "}>
+                                (You)
+                            </div> }
+                        {player.id === props.payload.hostId &&  
+                            <div className={"host-badge "}>
+                                Host
+                            </div> }
                     </div>
                 </div>
             </div>
