@@ -29,17 +29,17 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
   }
 
   function existsNameCollision(newName: string | undefined, room: RoomState, clientId: string) {
-    if (newName === undefined) { return true; }
-    if (room.players.length === 0) { return true; }
-    if (room.players.filter(p => ((p.name === newName) && p.id !== clientId)))
+    if (newName === undefined) { return false; }
+    if (room.players.length === 0) { return false; }
+    if (room.players.filter(p => ((p.name === newName) && p.id !== clientId)).length !== 0)
     {
       socket.emit(
         "error",
         "Player Names must be unique: someone else in this lobby already has this name"
       );
-      return false;
+      return true;
     }
-    return true;
+    return false;
   }
 
   socket.on("join", ({ code, name }: { name?: string, code: string }) => {
@@ -55,8 +55,22 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     }
 
     const clientId = room.server.authToId[socket.data.sessionAuth] as string;
+
+    //validate name, or if invalid, set it to undefined
+    if (!isValidName(name)) { name = undefined; }
+    if (existsNameCollision(name,room.server,clientId)) { name = undefined; }
+    
     // if person is already in the room, just reconnect them
     if (room.server.players.find((p) => p.id === clientId)) {
+      for (const client of room.clients) {
+        const playerInClientPlayers = client.players.find((p) => p.id === clientId);
+        if (playerInClientPlayers === undefined) {
+          socket.emit("error","internal server error: player does not exist in a client's player list");
+          return;
+        }
+        playerInClientPlayers.name = name;
+      }
+      broadcastRoomClientStates(room);
       socket.emit("logMessage", `reconnected to room ${code}`); 
       socket.emit("roomStateUpdate",room.clients.find((p) => p.clientId === clientId)); 
       return;
@@ -67,10 +81,6 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
       players: room.server.players.map(player => ({ ...player })),
       // note we might relay all room.server.players if spectator's are not supposed to see people's roles
     });
-
-    //validate name, or if invalid, set it to undefined
-    if (!isValidName(name)) { name = undefined; }
-    if (!existsNameCollision(name,room.server,clientId)) { name = undefined; }
 
     // add current client to server with full info
     room.server.players.push({ id: clientId, name, Role: "Spectator", roleKnown: true, allegianceKnown: true});
@@ -83,11 +93,7 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     
     socket.join([code,clientId]);
     broadcastRoomClientStates(room);
-    if (name === undefined) 
-    {
-      name = "Anonymous";
-    }
-    io.to(code).emit("logMessage", `${name} joined the room.`);
+    io.to(code).emit("logMessage", `${(name === undefined) ? "Anonymous" : name} joined the room.`);
   });
 
   // add leave room
@@ -115,7 +121,7 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
       return;
     } 
 
-    if (!existsNameCollision(newName,room.server,clientId)) return;
+    if (existsNameCollision(newName,room.server,clientId)) return;
     
     let prevName = player.name;
     player.name = newName;
@@ -127,6 +133,7 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
       }
       playerInClientPlayers.name = newName;
     }
+    broadcastRoomClientStates(room);
     io.to(code).emit("logMessage", `${(prevName === undefined) ? "Anonymous" : prevName} changed their name to ${(player.name === undefined) ? "Anonymous" : player.name}.`);
   });
 }
