@@ -4,8 +4,7 @@ import { io, rooms } from "./index.ts";
 import { v4 as uuid } from 'uuid';
 
 
-function broadcastRoomClientStates(room: Room) {
-  console.log(room);
+function broadcastRoomClientStates(room: Room) { 
   for (const player of room.server.players) {
     
     io.to(player.id).emit("roomStateUpdate", 
@@ -73,10 +72,13 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
         }
         playerInClientPlayers.name = name;
       }
+      console.log("person already in room");
       broadcastRoomClientStates(room);
       socket.emit("logMessage", `reconnected to room ${code}`); 
       return;
     }
+
+    console.log("person not already in room");
 
     // add new RoomClientState to keep track of client room state for this client
     room.clients.push({ clientId, hostId: room.server.hostId, code, 

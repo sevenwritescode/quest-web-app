@@ -115,7 +115,7 @@ function RoomScreen() {
 
   const navigate = useNavigate();  
   const location = useLocation();
-  const navType = useNavigationType(); 
+  // const _navType = useNavigationType(); 
     
   
   const doPayloadChange = (patch: Partial<RoomClientState>) =>
@@ -123,16 +123,14 @@ function RoomScreen() {
 
   const sockRef = useRef<Socket|null>(null);
 
-  useEffect(() => {
-    const sock = sockRef.current
-    if (!sock || sock.disconnected) {
-      console.warn("socket not ready yet");
-      return;
-    }
-    if (navType === "POP") {
-      sock.emit("join", {code, name: location.state.name});
-    }
-  }, [location.key]);
+  // useEffect(() => {
+  //   const sock = sockRef.current
+  //   if (!sock || sock.disconnected) {
+  //     console.warn("socket not ready yet");
+  //     return;
+  //   }
+  //   sock.emit("join", {code, name: location.state.name});
+  // }, [location.key]);
   
   useEffect(() => {
     if (code === "" || code === undefined) {
