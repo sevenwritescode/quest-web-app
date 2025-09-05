@@ -44,6 +44,7 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
   }
 
   socket.on("join", ({ code, name }: { name?: string, code: string }) => {
+    console.log("player join emit");
     const room = rooms[code];
     if (!room) {
       socket.emit("disconnect_request","Room does not exist");
@@ -79,6 +80,7 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     }
 
     console.log("person not already in room");
+    
 
     // add new RoomClientState to keep track of client room state for this client
     room.clients.push({ clientId, hostId: room.server.hostId, code, 
