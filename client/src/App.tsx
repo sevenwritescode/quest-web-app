@@ -161,8 +161,8 @@ function RoomScreen() {
         payload.log.push(message);
       });
 
-      sock.on("error", (err: any) => {
-        
+      sock.on("error", (err: string) => {
+        payload.error = err; 
       });
 
       sock.on("disconnect", (err: any) => {
