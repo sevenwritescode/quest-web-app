@@ -5,7 +5,8 @@ import {
   Route,
   useNavigate,
   useParams,
-  useLocation
+  useLocation,
+  useNavigationType
 } from 'react-router-dom'
 import Landing from './Landing'
 import Room from './Room';
@@ -112,14 +113,26 @@ function RoomScreen() {
 
   const [payload, setPayload] = useState<RoomClientState>({ code, players: [], hostId: "", clientId: "", log: []});
 
-  const navigate              = useNavigate();  
+  const navigate = useNavigate();  
   const location = useLocation();
+  const navType = useNavigationType(); 
     
   
   const doPayloadChange = (patch: Partial<RoomClientState>) =>
     setPayload(p => ({ ...p, ...patch }))
 
   const sockRef = useRef<Socket|null>(null);
+
+  useEffect(() => {
+    const sock = sockRef.current
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    if (navType === "POP") {
+      sock.emit("join", {code, name: location.state.name});
+    }
+  }, [location.key]);
   
   useEffect(() => {
     if (code === "" || code === undefined) {

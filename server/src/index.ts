@@ -49,7 +49,6 @@ app.post("/api/create-room", (req, res) => {
   const sessionAuth = getSessionAuth(req, res);
   const roomCode = generateRoomCode();
   const hostId = uuid();
-
   rooms[roomCode] = {
     server: {
       code: roomCode,
@@ -59,7 +58,6 @@ app.post("/api/create-room", (req, res) => {
     },
     clients: []
   };
-
   res.json({ code: roomCode });
 });
 
