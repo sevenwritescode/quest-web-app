@@ -25,18 +25,29 @@ export default function Room(props: RoomProps) {
             // show immediately
             setErrorVisible(true)
             // after 2s, start fade-out
-            fadeTimer = setTimeout(() => setErrorVisible(false), 2000)
+            fadeTimer = setTimeout(() => setErrorVisible(false), 3000)
             // after 2s + 0.5s (fade duration), clear the error in the parent
             clearTimer = setTimeout(
                 () => props.doPayloadChange({ error: undefined }),
-                2500
+                3500
             )
         }
         return () => {
         clearTimeout(fadeTimer)
         clearTimeout(clearTimer)
         }
-    }, [props.payload.error])
+    }, [props.payload.error]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setDisplayQRCode(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     return (<>
 

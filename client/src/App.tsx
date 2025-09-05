@@ -28,6 +28,11 @@ export type RoomClientState = {
   players: Player[], 
   clientId: string, 
   hostId: string,
+  // settings: {
+  //   name: string,
+
+  // }
+  // non-server reflected state
   log: {string: string, color: string}[],
   error?: string, 
 }
@@ -45,8 +50,8 @@ export default function App() {
 
 // 2) LandingScreen: same as your landing, but pushes the URL & lets server set a cookie
 function LandingScreen() {
-  const navigate              = useNavigate()
-  const location = useLocation()
+  const navigate = useNavigate();
+  const location = useLocation();
   const [payload, setPayload] = useState<LandingState>({ code: '', name: '', hostLoading: false, joinLoading: false, error: location?.state?.error })
 
   const doPayloadChange = (patch: Partial<LandingState>) =>
@@ -137,50 +142,57 @@ function RoomScreen() {
     const sock = io("/", {
         path: "/socket.io",
         withCredentials: true 
-      });
-      sockRef.current = sock;
-      console.log(code)
+    });
+    sockRef.current = sock;
+    console.log(code)
 
-      sock.on("connect_error", (err: any) => {
-        console.error("socket connect_error:", err?.message);
-        navigate("/", {
-          replace: true,
-          state: { error: String(err || "Connection error") }
-        })
-      });
+    sock.on("connect_error", (err: any) => {
+      console.error("socket connect_error:", err?.message);
+      navigate("/", {
+        replace: true,
+        state: { error: String(err || "Connection error") }
+      })
+    });
 
-      sock.on("connect", () => {
-        sock.emit("join", { name, code });
-      });
+    sock.on("connect", () => {
+      sock.emit("join", { name, code });
+    });
 
-      sock.on("roomStateUpdate", (state: Partial<RoomClientState>) => {
-        doPayloadChange(state);
-      });
+    sock.on("roomStateUpdate", (state: Partial<RoomClientState>) => {
+      doPayloadChange(state);
+    });
 
-      sock.on("logMessage", (message: {string: string, color: string}) => {
-        payload.log.push(message);
-      });
+    sock.on("logMessage", (message: {string: string, color: string}) => {
+      payload.log.push(message);
+    });
 
-      sock.on("error", (err: string) => {
-        payload.error = err; 
-      });
+    sock.on("error", (err: string) => {
+      doPayloadChange({error: err});
+    });
 
-      sock.on("disconnect", (err: any) => {
-        console.log("socket error:", err);
+    sock.on("disconnect_request", (err: string) => {
+      console.log("socket disconnect:", err); 
+      sock.disconnect();
+      navigate("/", {
+        state: { error: err }
+      });
+    });
+
+    sock.on("disconnect", (err: any) => {
+      console.log("socket disconnect:", err); 
+      navigate("/", {
+        replace: true,
+        state: { error: String(err || "Connection Disconnect") }
+      });
+    });
+
+    return () => {
+      const sock = sockRef.current;
+      if (sock) {
+        sock.off();
         sock.disconnect();
-        navigate("/", {
-          replace: true,
-          state: { error: String(err || "Connection error") }
-        });
-      });
-
-      return () => {
-        const sock = sockRef.current;
-        if (sock) {
-          sock.off();
-          sock.disconnect();
-        }
-      };
+      }
+    };
     
   }, [code]);
 

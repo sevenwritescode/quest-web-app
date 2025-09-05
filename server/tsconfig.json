@@ -40,5 +40,9 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
+
+    // Added myself
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": true
   }
 }
