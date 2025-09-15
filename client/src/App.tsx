@@ -108,32 +108,49 @@ function LandingScreen() {
 // 3) RoomScreen: same URL for lobby & game. we fetch /state and the server tells us which page
 
 export function RoomScreen() {
-  const { code } = useParams<{ code: string }>()
+  const { code } = useParams<{code:string}>()
   const navigate = useNavigate()
-  const location = useLocation();
+  const location = useLocation() as { state: { name?: string } }
+
+  let name =
+    typeof location.state?.name === 'string'
+      ? location.state.name
+      : undefined;
+  // if name is the empty string, actually set it to undefined
+  if (name === "") { name = undefined; }
 
   if (!code) {
-    navigate('/')
+    navigate('/', { replace: true })
     return null
   }
 
-  // pull any passed‐in name
-  const state = location.state as { name?: string } | undefined;
-  const name = typeof state?.name === 'string'
-    ? state.name
-    : undefined
+  const {
+    state: payload,
+    loading,
+    fatalError,
+    changeName,
+    doPayloadChange,
+  } = useRoomSocket(code, name)
 
-  const { state: payload, changeName, loading, error } = useRoomSocket(code, name)
-
-  // fatal errors send us back home
-  if (error) {
-    navigate('/', { replace: true, state: { error } })
-    return null
-  }
+  // any fatalError → kick you home
+  useEffect(() => {
+    if (fatalError) {
+      navigate('/', {
+        replace: true,
+        state: { error: fatalError },
+      })
+    }
+  }, [fatalError])
 
   if (loading) {
-    return <div>Connecting to room…</div>
+    return <div>Connecting…</div>
   }
 
-  return <Room payload={payload} onChangeName={changeName} doPayloadChange={() => {}} />
+  return (
+    <Room
+      payload={payload}
+      doPayloadChange={doPayloadChange}
+      onChangeName={changeName}
+    />
+  )
 }

@@ -1,16 +1,16 @@
-// useRoomSocket.ts
 import { useEffect, useReducer, useRef, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import type { RoomClientState } from './App'
 
-// 1a) define the actions you’ll handle
+// 1) Define actions
 type Action =
   | { type: 'INIT';    payload: { code: string } }
   | { type: 'UPDATE';  payload: Partial<RoomClientState> }
   | { type: 'LOG';     payload: { text: string; color: string } }
-  | { type: 'ERROR';   payload: string }
+  | { type: 'SET_APP_ERROR'; payload: string }   // non-fatal, shown in UI banner
+  ;
 
-// 1b) your reducer
+// 2) Reducer
 function reducer(state: RoomClientState, action: Action): RoomClientState {
   switch (action.type) {
     case 'INIT':
@@ -18,8 +18,11 @@ function reducer(state: RoomClientState, action: Action): RoomClientState {
     case 'UPDATE':
       return { ...state, ...action.payload }
     case 'LOG':
-      return { ...state, log: [...state.log, { string: action.payload.text, color: action.payload.color }] }
-    case 'ERROR':
+      return {
+        ...state,
+        log: [...state.log, { string: action.payload.text, color: action.payload.color }],
+      }
+    case 'SET_APP_ERROR':
       return { ...state, error: action.payload }
     default:
       return state
@@ -31,15 +34,14 @@ export default function useRoomSocket(
   name?: string
 ): {
   state: RoomClientState
-  changeName: (newName: string) => void
   loading: boolean
-  error?: string
+  fatalError?: string
+  changeName: (newName: string) => void
+  doPayloadChange: (patch: Partial<RoomClientState>) => void
 } {
-  // 2) local loading & error
   const [loading, setLoading] = useState(true)
   const [fatalError, setFatalError] = useState<string|undefined>(undefined)
 
-  // 3) our client state lives in a reducer
   const [state, dispatch] = useReducer(reducer, {
     code,
     players: [],
@@ -48,78 +50,72 @@ export default function useRoomSocket(
     log: [],
   })
 
-  // 4) keep a ref to the socket so we can emit later
-  const socketRef = useRef<Socket | null>(null)
+  // allow parent to merge any partial state (including clearing error)
+  const doPayloadChange = useCallback((patch: Partial<RoomClientState>) => {
+    dispatch({ type: 'UPDATE', payload: patch })
+  }, [])
+
+  const socketRef = useRef<Socket|null>(null)
 
   useEffect(() => {
-    const socket = io('/', {
+    setLoading(true)
+    setFatalError(undefined)
+    dispatch({ type: 'INIT', payload: { code } })
+
+    const sock = io('/', {
       path: '/socket.io',
       withCredentials: true,
       reconnection: true,
-      // you can configure reconnectionAttempts, delays, etc here
     })
+    socketRef.current = sock
 
-    socketRef.current = socket
-
-    // on connect (and reconnect), join the room
-    socket.on('connect', () => {
+    // 3) On successful connect (or reconnect) we join
+    sock.on('connect', () => {
       setLoading(false)
-      socket.emit('join', { code, name })
+      sock.emit('join', { code, name })
+    })
+    sock.io.on('reconnect', () => {
+      sock.emit('join', { code, name })
     })
 
-    // if reconnect happens, re-join
-    socket.io.on('reconnect', () => {
-      socket.emit('join', { code, name })
+    // 4) Your server pushing down new state
+    sock.on('roomStateUpdate', (upd: Partial<RoomClientState>) => {
+      dispatch({ type: 'UPDATE', payload: upd })
     })
 
-    socket.on('roomStateUpdate', (payload: Partial<RoomClientState>) => {
-      dispatch({ type: 'UPDATE', payload })
+    sock.on('logMessage', (msg: { string: string; color: string }) => {
+      dispatch({ type: 'LOG', payload: { text: msg.string, color: msg.color } })
     })
 
-    socket.on('logMessage', (msg: { string: string; color: string }) => {
-      // note we’re not mutating state.log directly
-      dispatch({
-        type: 'LOG',
-        payload: { text: msg.string, color: msg.color },
-      })
+    // 5) Your “application” errors—invalid name, name-taken, room-not-found, etc.
+    sock.on('error', (errMsg: string) => {
+      // <-- non-fatal
+      dispatch({ type: 'SET_APP_ERROR', payload: errMsg })
     })
 
-    socket.on('error', (err: string) => {
-      dispatch({ type: 'ERROR', payload: err })
+    // 6) Truly fatal connectivity errors
+    sock.on('connect_error', (err: any) => {
+      setFatalError(err.message || 'Connection failed')
     })
-
-    socket.on('connect_error', (err: any) => {
-      setFatalError(err.message || 'Connection error')
+    sock.on('disconnect_request', (reason: string) => {
+      setFatalError(reason || 'Kicked from server')
+      sock.disconnect()
     })
-
-    socket.on('disconnect_request', (reason: string) => {
-      // server told us to leave
-      setFatalError(reason)
-      socket.disconnect()
-    })
-
-    socket.on('disconnect', (reason: any) => {
+    sock.on('disconnect', (reason: any) => {
       setFatalError(String(reason) || 'Disconnected')
     })
 
     return () => {
-      socket.off()
-      socket.disconnect()
+      sock.off()
+      sock.disconnect()
     }
-  }, [code, name])
+  }, [code])
 
-  // 5) exposed action to change name
   const changeName = useCallback((newName: string) => {
-    // guard against the socket not being set yet or having disconnected
     if (socketRef.current && !socketRef.current.disconnected) {
       socketRef.current.emit('changeName', { newName, code })
     }
   }, [code])
 
-  return {
-    state,
-    changeName,
-    loading,
-    error: fatalError ?? state.error,
-  }
+  return { state, loading, fatalError, changeName, doPayloadChange }
 }
