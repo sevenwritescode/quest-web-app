@@ -1,5 +1,5 @@
 // App.tsx
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect  } from 'react'
 import {
   Routes,
   Route,
@@ -10,7 +10,6 @@ import {
 } from 'react-router-dom'
 import Landing from './Landing'
 import Room from './Room';
-import { io, Socket } from "socket.io-client"
 import { Navigate } from 'react-router-dom'
 import useRoomSocket from './useRoomSocket';
 

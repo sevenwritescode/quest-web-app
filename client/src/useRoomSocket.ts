@@ -1,7 +1,7 @@
 // useRoomSocket.ts
 import { useEffect, useReducer, useRef, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
-import type { RoomClientState, Player } from './App'
+import type { RoomClientState } from './App'
 
 // 1a) define the actions you’ll handle
 type Action =
