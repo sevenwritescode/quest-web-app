@@ -14,7 +14,7 @@ function broadcastRoomClientStates(room: Room) {
 }
 
 export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {
-  console.log(`⚡ Socket connected: ${socket.id}`);
+  // console.log(`⚡ Socket connected: ${socket.id}`);
 
   function isValidName(newName: string | undefined) {
     if (newName === undefined) { return true; }
