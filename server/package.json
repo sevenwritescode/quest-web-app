@@ -8,7 +8,7 @@
     "client:build:watch": "npm --prefix ../client run build:watch",
     "dev": "concurrently -k \"npm run client:build:watch\" \"npm run server:dev\"",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "start": "node --enable-source-maps dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
