@@ -10,10 +10,8 @@
 
 /* Consistent phone-frame container */
 .phone-wrapper {
-  aspect-ratio: 1;
-  width: 100%;
-  max-width: calc(100vh * 1);
-  max-height: 100vh;
+  height: 100vh;
+  width: clamp(56.25vh, 100vw, 100vh);
   margin: 0 auto;
   position: relative;
   overflow: hidden;

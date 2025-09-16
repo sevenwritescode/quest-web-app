@@ -17,10 +17,22 @@ interface RoomProps {
 export default function Room(props: RoomProps) { 
     const [displayQRCode,setDisplayQRCode] = useState(false);
     const [displayLog,setDisplayLog] = useState(false);
+    const [displaySettings, setDisplaySettings] = useState(false);
+    const [settingsTab, setSettingsTab] = useState<'client' | 'game'>('client');
     const [errorVisible, setErrorVisible] = useState(false);
     const logRef = useRef<HTMLDivElement>(null);
+    const isHost = props.payload.clientId === props.payload.hostId;
+    const [newName, setNewName] = useState<string>(
+      props.payload.players.find(p => p.id === props.payload.clientId)?.name || ''
+    );
+    useEffect(() => {
+      if (displaySettings) {
+        const curr = props.payload.players.find(p => p.id === props.payload.clientId);
+        setNewName(curr?.name || '');
+      }
+    }, [displaySettings, props.payload.players, props.payload.clientId]);
+
     // room code pill button (visual only, no copy functionality)
-    
     useEffect(() => {
         let fadeTimer: ReturnType<typeof setTimeout>
         let clearTimer: ReturnType<typeof setTimeout>
@@ -47,6 +59,7 @@ export default function Room(props: RoomProps) {
             if (e.key === 'Escape') {
                 setDisplayQRCode(false);
                 setDisplayLog(false);
+                setDisplaySettings(false);
             }
         };
 
@@ -54,7 +67,6 @@ export default function Room(props: RoomProps) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    console.log(props.payload.log);
     useEffect(() => {
         if (displayLog && logRef.current) {
             logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -68,7 +80,7 @@ export default function Room(props: RoomProps) {
     </div>
 
     <div className="settings-button" onClick={() => {
-        console.log("Setting: TODO ");
+        setDisplaySettings(true);
     }} >
         <img src={gear_icon} alt="Gear Icon -- Settings Button" />
     </div>
@@ -132,7 +144,95 @@ export default function Room(props: RoomProps) {
             </div>
         ))}
     </div>
-    </>);
-}
+    {displaySettings && (
+    <div className="settings-overlay" onClick={() => setDisplaySettings(false)}>
+      <div className="settings-modal" onClick={e => e.stopPropagation()}>
+  <button className="settings-close-button" onClick={() => setDisplaySettings(false)}>✕</button>
+        <div className="settings-tabs">
+          <button
+            className={settingsTab === 'client' ? 'active' : ''}
+            onClick={() => setSettingsTab('client')}
+          >Client Settings</button>
+          <button
+            className={settingsTab === 'game' ? 'active' : ''}
+            onClick={() => setSettingsTab('game')}
+          >Game Settings</button>
+        </div>
+        <div className="settings-content">
+          {settingsTab === 'client' && (
+            <div className="settings-section">
+              <div className="settings-row">
+                <span className="settings-label">Username</span>
+                <input
+                  className="settings-input"
+                  type="text"
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      props.onChangeName(e.currentTarget.value);
+                    }
+                  }}
+                />
+              </div>
+              <div className="settings-row">
+                <span className="settings-label">Become Spectator</span>
+                <button
+                  className="settings-action-button"
+                  onClick={() => console.log('TODO: implement spectator toggle')}
+                >Toggle Spectator</button>
+              </div>
+              <div className="settings-row leave-row">
+                <button
+                  className="leave-room-button"
+                  onClick={() => console.log('TODO: add leaving callback')}
+                >Leave Room</button>
+              </div>
+            </div>
+          )}
+          {settingsTab === 'game' && (
+            <div className={
+              `settings-section${!isHost ? ' disabled-section' : ''}`
+            }>
+              <div className="settings-row">
+                <span className="settings-label">Max Players</span>
+                <input
+                  className="settings-input"
+                  type="number"
+                  defaultValue={8}
+                  disabled={!isHost}
+                />
+              </div>
+              <div className="settings-row">
+                <span className="settings-label">Round Time</span>
+                <input
+                  className="settings-input"
+                  type="range"
+                  min={30}
+                  max={300}
+                  defaultValue={60}
+                  disabled={!isHost}
+                />
+              </div>
+
+            {Array.from({ length: 20 }).map((_, idx) => (
+                <div key={idx} className="settings-row">
+                    <span className="settings-label">Test Setting {idx + 1}</span>
+                    <input
+                        className="settings-input"
+                        type="text"
+                        defaultValue={`Value ${idx + 1}`}
+                        disabled={!isHost}
+                    />
+                </div>
+            ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+  </>);
+ }
 
 
