@@ -19,31 +19,35 @@
   transition-duration: 0ms;     /* duration-0 */
 }
 .error-hidden {
-  opacity: 0;
-  transition-duration: 500ms;   /* duration-500 */
+     opacity: 0;
+     transition-duration: 500ms;   /* duration-500 */
 }
-
+.error-hidden {
+    opacity: 0;
+    transition-duration: 500ms;   /* duration-500 */
+}
 .settings-button {
-    position: absolute; 
+    position: absolute;
     width: 2.5rem;
-    margin: 0.5rem;
-    top: 0rem;
-    left: 0rem;
-    z-index: 1000; 
+    margin: 0;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1000;
 }
 
 .settings-button img {
     margin: 0rem;
-    height: auto;
+     z-index: 1000;
     width: 100%;
 }
 
 .log-button {
     position: absolute;
+    z-index: 1000;
     width: 2.5rem;
-    margin: 0.5rem;
-    top: 0rem;
-    left: 3.5rem;
+    margin: 0;
+    top: 1rem;
+    left: calc(1rem + 2.5rem + 1rem);
 }
 
 .log-button img {
@@ -67,7 +71,7 @@
 
 /* container for log messages overlay */
 .log-modal {
-    position: fixed;
+    position: absolute;
     top: 1rem;
     right: 1rem;
     z-index: 1500;
@@ -120,7 +124,7 @@
 
 /* Room code pill button (visual only) */
 .room-code-btn {
-    position: fixed;
+    position: absolute;
     top: 1rem;
     right: 1rem;
     z-index: 1000;
@@ -169,13 +173,31 @@
 }
 
 .player-list {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20rem;
+    bottom: 0;
     display: flex;
-    justify-items: center;
-    align-items: center;
     flex-direction: column;
     gap: 0.4em;
-    margin-top: 3.5rem;
     overflow-y: auto;
+    padding-top: 5rem; /* offset for header buttons */
+}
+.player-list::-webkit-scrollbar {
+    width: 8px;
+}
+.player-list::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+}
+.player-list::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 4px;
+}
+.player-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.5);
 }
 
 

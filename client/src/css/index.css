@@ -8,41 +8,23 @@
   font-style: normal;
 }
 
-@font-face {
-  font-family: 'GothicPixels';
-  src: url('/fonts/GothicPixels.ttf') format('opentype');
-  font-weight: normal;
-  font-style: normal;
-}
-
+/* Consistent phone-frame container */
 .phone-wrapper {
-  width: 100%;    
-  height: auto;
-
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: calc(100vh * 1);
+  max-height: 100vh;
   margin: 0 auto;
-  padding: 0vh 0.5vw;
-  position: relative; 
-  display: flow-root;  
-}
-
-@media (orientation: landscape) {
-  .phone-wrapper {
-    /* enforce a 16:9 box that never exceeds the viewport */
-    aspect-ratio: 1;
-
-    /* if the viewport is VERY wide ( AR ≥ 16/9 ) we limit width by height*16/9  
-    otherwise we limit width by 100vw.  */  
-    width: min(  
-      calc(100vh * 1),  
-      100vw  
-    );  
-  }
-}
-
-.cropped-viewport {
   position: relative;
-  inset: 0;
   overflow: hidden;
+}
+
+/* Fill the wrapper and hide overflow for internal cropping */
+.cropped-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  margin: 0rem;
 }
 
 
@@ -51,5 +33,11 @@
   background-color: rgb(80, 80, 80);
   font-size: 1.2rem;
   font-family: 'Inter', 'Della Respira', sans-serif;
+}
+/* Prevent page scrolling; allow only fixed elements to scroll */
+html, body {
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
 }
 

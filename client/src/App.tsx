@@ -118,6 +118,26 @@ function RoomScreen() {
   const location = useLocation();
   // const _navType = useNavigationType(); 
 
+  // useEffect(() => {
+  //   const testLog = Array.from({ length: 100 }, (_, i) => ({
+  //     mes: `Test message ${i + 1}`,
+  //     color: ['red', 'green', 'blue'][i % 3],
+  //   }))
+  //   setPayload({
+  //     log: testLog,
+  //     players: Array.from({ length: 10 }, (_, i) => ({
+  //       id: `player${i + 1}`,
+  //       name: `Test Player ${i + 1}`,
+  //       Role: "Spectator",
+  //       roleKnown: false,
+  //       allegianceKnown: false
+  //     })),
+  //     code: "POOP",
+  //     clientId: "test",
+  //     hostId: "test"
+  //   })
+  // }, [])
+
   const doPayloadChange = (patch: Partial<RoomClientState>) =>
     setPayload(p => ({ ...p, ...patch }))
 
