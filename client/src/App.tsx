@@ -34,7 +34,7 @@ export type RoomClientState = {
 
   // }
   // non-server reflected state
-  log: {string: string, color: string}[],
+  log: {mes: string, color: string}[],
   error?: string, 
 }
 
@@ -118,7 +118,6 @@ function RoomScreen() {
   const location = useLocation();
   // const _navType = useNavigationType(); 
 
-
   const doPayloadChange = (patch: Partial<RoomClientState>) =>
     setPayload(p => ({ ...p, ...patch }))
 
@@ -165,7 +164,7 @@ function RoomScreen() {
       doPayloadChange(state);
     });
 
-    sock.on("logMessage", (message: {string: string, color: string}) => {
+    sock.on("logMessage", (message: {mes: string, color: string}) => {
       setPayload(prev => ({
         ...prev,
         log: [...prev.log, message]
@@ -186,10 +185,11 @@ function RoomScreen() {
 
     sock.on("disconnect", (err: any) => {
       console.log("socket disconnect:", err); 
-      navigate("/", {
-        replace: true,
-        state: { error: String(err || "Connection Disconnect") }
-      });
+      doPayloadChange({ error: err });
+      // navigate("/", {
+      //   replace: true,
+      //   state: { error: String(err || "Connection Disconnect") }
+      // });
     });
 
     return () => {

@@ -43,10 +43,12 @@ function existsNameCollision(
 /**
  * Update a player's name in the server and all client states of the room.
  */
-function updatePlayerNameInRoom(room: Room, clientId: string, newName?: string) {
+function updatePlayerNameInRoom(room: Room, clientId: string, newName: string | undefined) {
   // Update server-side player name
+  let prevName;
   const player = room.server.players.find(p => p.id === clientId);
   if (player) {
+    prevName = player.name;
     player.name = newName;
   }
   // Update each client's view
@@ -56,6 +58,7 @@ function updatePlayerNameInRoom(room: Room, clientId: string, newName?: string) 
       p.name = newName;
     }
   }
+  io.to(room.server.code).emit("logMessage",{mes:`${prevName ?? "Anonymous"} changed their name to ${newName}`, color: "gray"});
 }
 
 /**
@@ -120,10 +123,18 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     if (!isValidName(socket, name)) name = undefined;
     if (existsNameCollision(socket, name, room.server, clientId)) name = undefined;
     // reconnect existing player
-    if (room.server.players.some(p => p.id === clientId)) {
-      updatePlayerNameInRoom(room, clientId, name);
-      broadcastRoomClientStates(room);
-      socket.emit("logMessage", `reconnected to room ${code}`);
+    const existingPlayer = room.server.players.find(p => p.id === clientId);
+    if (existingPlayer) {
+      // change name
+      if (existingPlayer.name !== name) {
+        updatePlayerNameInRoom(room, clientId, name);
+        broadcastRoomClientStates(room);
+      }
+      // otherwise just update client
+      else {
+        socket.emit("roomStateUpdate", room.clients.find((p) => (p.clientId === existingPlayer.id)));
+      }
+      socket.emit("logMessage", {mes: `reconnected to room ${code}`, color: "gray"});
       return;
     }
     // new player
@@ -132,7 +143,7 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     broadcastRoomClientStates(room);
     io.to(code).emit(
       "logMessage",
-      `${name === undefined ? "Anonymous" : name} joined the room.`
+      { mes: `${name === undefined ? "Anonymous" : name} joined the room.`, color: "green"}
     );
   });
 
@@ -166,9 +177,5 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     const prevName = player.name;
     updatePlayerNameInRoom(room, clientId, newName);
     broadcastRoomClientStates(room);
-    io.to(code).emit(
-      "logMessage",
-      `${prevName === undefined ? "Anonymous" : prevName} changed their name to ${newName === undefined ? "Anonymous" : newName}.`
-    );
   });
 }

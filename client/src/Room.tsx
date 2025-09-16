@@ -1,9 +1,10 @@
 // import React from "react";
 import type { RoomClientState } from "./App";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import "./css/index.css";
 import "./css/Room.css";
 import gear_icon from './assets/Gear_icon_svg.svg';
+import log_icon from './assets/system-log-2.png';
 import QRCode from "react-qr-code";
 
 
@@ -15,7 +16,10 @@ interface RoomProps {
 
 export default function Room(props: RoomProps) { 
     const [displayQRCode,setDisplayQRCode] = useState(false);
+    const [displayLog,setDisplayLog] = useState(false);
     const [errorVisible, setErrorVisible] = useState(false);
+    const logRef = useRef<HTMLDivElement>(null);
+    // room code pill button (visual only, no copy functionality)
     
     useEffect(() => {
         let fadeTimer: ReturnType<typeof setTimeout>
@@ -42,12 +46,20 @@ export default function Room(props: RoomProps) {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 setDisplayQRCode(false);
+                setDisplayLog(false);
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
+
+    console.log(props.payload.log);
+    useEffect(() => {
+        if (displayLog && logRef.current) {
+            logRef.current.scrollTop = logRef.current.scrollHeight;
+        }
+    }, [props.payload.log, displayLog]);
 
     return (<>
 
@@ -61,24 +73,35 @@ export default function Room(props: RoomProps) {
         <img src={gear_icon} alt="Gear Icon -- Settings Button" />
     </div>
 
-    <div className="code-container" onClick={() => {setDisplayQRCode(true)}}>
-        Code: {props.payload.code}
+    <div className="log-button" onClick={() => {
+        displayLog ? setDisplayLog(false) : setDisplayLog(true);
+    }}>
+        <img src={log_icon} alt="Log Icon -- View Log Button" ></img>
     </div>
 
+    <div ref={logRef} className={`log-modal ${displayLog ? 'log-visible' : 'log-hidden'}`}>
+        {props.payload.log.map((entry, index) => (
+            <div key={index} className={`log-entry ${entry.color}`}>
+                {entry.mes}
+            </div>
+        ))}
+    </div>
+
+    <div className="room-code-btn" onClick={() => setDisplayQRCode(prev => !prev)}>
+        {props.payload.code}
+    </div>
+
+   
+
     {displayQRCode && (
-        <div className="qr-code-container">
-            <button
-                className="qr-code-escape"
-                onClick={() => setDisplayQRCode(false)}
-            >
-                Close
-            </button>
-            <QRCode
-                value={window.location.href}
-                size={128}
-                level="L"
-                
-            />
+        <div className="qr-overlay" onClick={() => setDisplayQRCode(false)}>
+            <div className="qr-code-container" onClick={e => e.stopPropagation()}>
+                <QRCode
+                    value={window.location.href}
+                    size={200}
+                    level="L"
+                />
+            </div>
         </div>
     )}
     

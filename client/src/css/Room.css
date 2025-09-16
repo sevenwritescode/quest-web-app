@@ -38,24 +38,134 @@
     width: 100%;
 }
 
-.code-container {
+.log-button {
     position: absolute;
+    width: 2.5rem;
+    margin: 0.5rem;
     top: 0rem;
-    right: 0rem;
-    z-index: 1000;
+    left: 3.5rem;
 }
 
-.qr-code-container {
+.log-button img {
+    margin: 0rem;
+    height: auto;
+    width: 100%;
+    filter: grayscale(100%) brightness(25%);
+}
+
+.log-hidden {
+    opacity: 0;
+    display: none;
+}
+
+.log-visible {
+    opacity: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* container for log messages overlay */
+.log-modal {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border-color: #000;
-    border: 2px solid #000;
-    border-radius: 0.5rem;
-    border-radius: 1rem;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1500;
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 20rem;
+    max-height: 60vh;
     padding: 1rem;
+    background-color: rgba(27, 27, 27, 0.90);
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+}
+.log-modal.log-visible {
+    display: flex;
+    opacity: 1;
+}
+.log-modal.log-hidden {
+    display: none;
+    opacity: 0;
+}
+/* individual log entries */
+.log-entry {
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    font-family: monospace;
+    font-size: 0.875rem;
+    color: #fff;
+    word-break: break-word;
+}
+.log-modal::-webkit-scrollbar {
+    width: 8px;
+}
+.log-modal::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+}
+.log-modal::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 4px;
+}
+.log-modal::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.5);
+}
+.log-entry.gray { background-color: rgba(255, 255, 255, 0.1); color: #ccc; }
+.log-entry.red  { background-color: rgba(255,   0,   0, 0.2); color: #f88; }
+.log-entry.green{ background-color: rgba(  0, 255,   0, 0.2); color: #8f8; }
+
+/* Room code pill button (visual only) */
+.room-code-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: background 150ms ease, transform 100ms ease;
+    user-select: none;
+}
+.room-code-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+.room-code-btn:active {
+    transform: scale(0.97);
+}
+
+
+
+/* QR code overlay and card */
+.qr-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
     z-index: 2000;
+}
+.qr-code-container {
+    position: relative;
+    background: #fff;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .player-list {

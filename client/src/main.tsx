@@ -14,9 +14,11 @@ const root = createRoot(container);
 root.render(
   <StrictMode>
     <div className="phone-wrapper">
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <div className="cropped-viewport">
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </div>
     </div>
   </StrictMode>
 );  
