@@ -213,11 +213,39 @@
     gap: 0.5rem;
     max-width: 20rem;
     max-height: 60vh;
-    padding: 1rem;
+    padding: 1rem 0.5rem 1rem 1rem;
     background-color: rgba(27, 27, 27, 0.90);
     border-radius: 0.5rem;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    /* allow overflow for corner close button */
+    overflow: visible;
+}
+/* Scrollable content inside log modal */
+.log-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     overflow-y: auto;
+    /* reserve space for scrollbar */
+    padding-right: 0.5rem;
+    scrollbar-gutter: stable;
+    /* adjust for modal padding */
+    max-height: calc(60vh - 2rem);
+}
+/* Custom scrollbar for log-content in WebKit browsers */
+.log-content::-webkit-scrollbar {
+    width: 8px;
+}
+.log-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+.log-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+.log-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 .log-modal.log-visible {
     display: flex;
@@ -226,6 +254,25 @@
 .log-modal.log-hidden {
     display: none;
     opacity: 0;
+}
+/* Close button for log modal */
+.log-close-button {
+    position: absolute;
+    top: -1rem;
+    left: -1rem;
+    width: 2rem;
+    height: 2rem;
+    background: #444;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    z-index: 1499;
 }
 /* individual log entries */
 .log-entry {
@@ -313,6 +360,7 @@
     width: 20rem;
     bottom: 0;
     display: flex;
+    align-items: center;
     flex-direction: column;
     gap: 0.4em;
     overflow-y: auto;

@@ -91,13 +91,17 @@ export default function Room(props: RoomProps) {
         <img src={log_icon} alt="Log Icon -- View Log Button" ></img>
     </div>
 
-    <div ref={logRef} className={`log-modal ${displayLog ? 'log-visible' : 'log-hidden'}`}>
-        {props.payload.log.map((entry, index) => (
-            <div key={index} className={`log-entry ${entry.color}`}>
-                {entry.mes}
-            </div>
-        ))}
+  <div className={`log-modal ${displayLog ? 'log-visible' : 'log-hidden'}`}>
+    {/* Close button for log modal */}
+    <button className="log-close-button" onClick={() => setDisplayLog(false)}>✕</button>
+    <div ref={logRef} className="log-content">
+      {props.payload.log.map((entry, index) => (
+        <div key={index} className={`log-entry ${entry.color}`}>
+          {entry.mes}
+        </div>
+      ))}
     </div>
+  </div>
 
     <div className="room-code-btn" onClick={() => setDisplayQRCode(prev => !prev)}>
         {props.payload.code}
