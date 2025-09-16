@@ -1,6 +1,6 @@
 import type { DefaultEventsMap, Socket } from "socket.io";
 import type { Room, RoomState } from "./types.ts";
-import { io, rooms } from "./index.ts";
+import { io, rooms } from "./index.js";
 import { v4 as uuid } from 'uuid';
 
 

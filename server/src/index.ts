@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import express from "express";
 import { v4 as uuid } from 'uuid';
 import path, { dirname } from "path";
 import cookieParser from "cookie-parser";
@@ -8,7 +8,9 @@ import { randomBytes } from "crypto"
 import cookie from "cookie";
 import { fileURLToPath } from "url";
 import type { Room } from "./types.ts";
-import { roomSocketInit } from "./socket.ts";
+import { roomSocketInit } from "./socket.js";
+
+console.log('starting server');
 
 const app = express();
 // Determine ports for HTTP (Express) and Socket.IO servers
