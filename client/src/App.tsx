@@ -1,5 +1,5 @@
 // App.tsx
-import { useState, useEffect  } from 'react'
+import { useState, useEffect, useRef  } from 'react'
 import {
   Routes,
   Route,
@@ -11,7 +11,7 @@ import {
 import Landing from './Landing'
 import Room from './Room';
 import { Navigate } from 'react-router-dom'
-import useRoomSocket from './useRoomSocket';
+import { io, type Socket } from 'socket.io-client';
 
 export type LandingState    = { 
   name: string,
@@ -107,50 +107,115 @@ function LandingScreen() {
 
 // 3) RoomScreen: same URL for lobby & game. we fetch /state and the server tells us which page
 
-export function RoomScreen() {
-  const { code } = useParams<{code:string}>()
-  const navigate = useNavigate()
-  const location = useLocation() as { state: { name?: string } }
+function RoomScreen() {
+  const { code } = useParams<{ code: string }>()
+  if (code === undefined)
+    throw new Error("Room Code is undefined");
 
-  let name =
-    typeof location.state?.name === 'string'
-      ? location.state.name
-      : undefined;
-  // if name is the empty string, actually set it to undefined
-  if (name === "") { name = undefined; }
+  const [payload, setPayload] = useState<RoomClientState>({ code, players: [], hostId: "", clientId: "", log: []});
 
-  if (!code) {
-    navigate('/', { replace: true })
-    return null
-  }
+  const navigate = useNavigate();  
+  const location = useLocation();
+  // const _navType = useNavigationType(); 
 
-  const {
-    state: payload,
-    loading,
-    fatalError,
-    changeName,
-    doPayloadChange,
-  } = useRoomSocket(code, name)
 
-  // any fatalError → kick you home
+  const doPayloadChange = (patch: Partial<RoomClientState>) =>
+    setPayload(p => ({ ...p, ...patch }))
+
+  const sockRef = useRef<Socket|null>(null);
+
   useEffect(() => {
-    if (fatalError) {
-      navigate('/', {
-        replace: true,
-        state: { error: fatalError },
-      })
+    if (code === "" || code === undefined) {
+      navigate("/") 
+      return;
+    } 
+    if (code !== code.toUpperCase()) {
+      navigate(`/room/${code.toUpperCase()}`,{ replace: true, state: location.state });
+      return;
     }
-  }, [fatalError])
 
-  if (loading) {
-    return <div>Connecting…</div>
+    let name: string | undefined = undefined;
+    if (location.state && typeof location.state.name === 'string') {
+      name = location.state.name;
+    }
+    if (name === "") {
+      name = undefined;
+    }
+
+    const sock = io("/", {
+        path: "/socket.io",
+        withCredentials: true 
+    });
+    sockRef.current = sock;
+    console.log(code)
+
+    sock.on("connect_error", (err: any) => {
+      console.error("socket connect_error:", err?.message);
+      navigate("/", {
+        replace: true,
+        state: { error: String(err || "Connection error") }
+      })
+    });
+
+    sock.on("connect", () => {
+      sock.emit("join", { code, name });
+    });
+
+    sock.on("roomStateUpdate", (state: Partial<RoomClientState>) => {
+      doPayloadChange(state);
+    });
+
+    sock.on("logMessage", (message: {string: string, color: string}) => {
+      setPayload(prev => ({
+        ...prev,
+        log: [...prev.log, message]
+      }));
+    });
+
+    sock.on("error", (err: string) => {
+      doPayloadChange({error: err});
+    });
+
+    sock.on("disconnect_request", (err: string) => {
+      console.log("socket disconnect request:", err); 
+      sock.disconnect();
+      navigate("/", {
+        state: { error: err }
+      });
+    });
+
+    sock.on("disconnect", (err: any) => {
+      console.log("socket disconnect:", err); 
+      navigate("/", {
+        replace: true,
+        state: { error: String(err || "Connection Disconnect") }
+      });
+    });
+
+    return () => {
+      const sock = sockRef.current;
+      if (sock) {
+        sock.off();
+        sock.disconnect();
+      }
+    };
+
+  }, [code]);
+
+  const doChangeName = (newName: string) => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    sock.emit("changeName", { newName, code });
+    navigate(location.pathname, {
+      replace: true,
+      state: {
+        name: newName
+      }
+    })
   }
-
-  return (
-    <Room
-      payload={payload}
-      doPayloadChange={doPayloadChange}
-      onChangeName={changeName}
-    />
-  )
+  
+  return <Room payload={payload} doPayloadChange={doPayloadChange} onChangeName={doChangeName}/>
 }
