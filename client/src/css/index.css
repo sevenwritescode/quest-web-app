@@ -11,7 +11,7 @@
 /* Consistent phone-frame container */
 .phone-wrapper {
   height: 100vh;
-  width: clamp(56.25vh, 100vw, 100vh);
+  width: clamp(30vh, 100vw, 100vh);
   margin: 0 auto;
   position: relative;
   overflow: hidden;
