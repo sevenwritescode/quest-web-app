@@ -9,6 +9,7 @@ import cookie from "cookie";
 import { fileURLToPath } from "url";
 import type { Room } from "./types.ts";
 import { roomSocketInit } from "./socket.js";
+import { canonicalDecks } from "./data/decks/index.js";
 
 console.log('starting server');
 
@@ -57,7 +58,8 @@ app.post("/api/create-room", (req, res) => {
       players: [  ],
       hostId,
       settings: {
-        numberOfPlayers: 7
+        numberOfPlayers: 7,
+        deck: canonicalDecks.p7dc
       },
       authToId: { [sessionAuth]: hostId } 
     },

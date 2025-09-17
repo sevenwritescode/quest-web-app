@@ -1,5 +1,5 @@
 import type { DefaultEventsMap, Socket } from "socket.io";
-import type { Room, RoomState } from "./types.ts";
+import type { Room, RoomServerState } from "./types.ts";
 import { io, rooms } from "./index.js";
 import { v4 as uuid } from 'uuid';
 
@@ -25,7 +25,7 @@ function isValidName(socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultE
 function existsNameCollision(
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
   newName: string | undefined,
-  room: RoomState,
+  room: RoomServerState,
   clientId: string
 ): boolean {
   if (newName === undefined) return false;
@@ -111,7 +111,8 @@ function addNewClient(room: Room, clientId: string, name?: string) {
     code: room.server.code,
     players: room.server.players.map(player => ({ ...player })),
     settings: {
-      numberOfPlayers: room.server.settings.numberOfPlayers
+      numberOfPlayers: room.server.settings.numberOfPlayers,
+      deck: JSON.parse(JSON.stringify(room.server.settings.deck))
     }
   });
   // add to server players
@@ -232,8 +233,8 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     } 
 
     if (existsNameCollision(socket, newName, room.server, clientId)) return;
+    if (player.name === newName) return;
     
-    const prevName = player.name;
     updatePlayerNameInRoom(room, clientId, newName);
     broadcastRoomClientStates(room);
   });

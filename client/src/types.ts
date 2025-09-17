@@ -1,3 +1,11 @@
+export type LandingState = {
+  name: string,
+  code: string,
+  error?: string,
+  hostLoading: boolean,
+  joinLoading: boolean
+}
+
 export type Role =
   | "Spectator"
   | "Morgan Le Fay"
@@ -19,7 +27,7 @@ export type Role =
   | "Cleric"
   | "Arthur"
 
-export type Player = { id: string; name: string | undefined; Role?: Role, roleKnown: boolean, allegianceKnown: boolean }
+export type Player = { id: string; name?: string; Role?: Role, roleKnown: boolean, allegianceKnown: boolean }
 
 export type DeckItem =
   | Role
@@ -36,25 +44,15 @@ export type Deck = {
 
 export type RoomClientState = {
   code: string,
-  players: Player[], 
-  clientId: string, 
+  players: Player[],
+  clientId: string,
   hostId: string,
   settings: {
     numberOfPlayers: number,
-    deck: Deck,
+    deck: Deck
   }
+  
+  // non-server reflected state
+  log: { mes: string, color: string }[],
+  error?: string,
 }
-
-export type RoomServerState = { 
-  code: string, 
-  players: Player[],
-  hostId: string, 
-  settings: {
-    numberOfPlayers: number
-    deck: Deck 
-  }
-  // server only props
-  authToId: Record<string,string>
-}
-
-export type Room = { server: RoomServerState, clients: RoomClientState[] }

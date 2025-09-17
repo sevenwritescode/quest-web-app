@@ -1,10 +1,11 @@
 // import React from "react";
-import type { RoomClientState } from "./App";
+import type { RoomClientState  } from "./types"
 import { useEffect, useState, useRef } from "react";
 import "./css/index.css";
 import "./css/Room.css";
 import gear_icon from './assets/Gear_icon_svg.svg';
 import log_icon from './assets/system-log-2.png';
+import knowledge_icon from './assets/books-17.svg';
 import QRCode from "react-qr-code";
 
 
@@ -20,6 +21,7 @@ export default function Room(props: RoomProps) {
     const [displayQRCode, setDisplayQRCode] = useState(false);
     const [displayLog, setDisplayLog] = useState(false);
     const [displaySettings, setDisplaySettings] = useState(false);
+    const [displayKnowledge, setDisplayKnowledge] = useState(false);
     const [settingsTab, setSettingsTab] = useState<'client' | 'game'>('client');
     const [errorVisible, setErrorVisible] = useState(false);
     const logRef = useRef<HTMLDivElement>(null);
@@ -38,7 +40,7 @@ export default function Room(props: RoomProps) {
         }
     }, [displaySettings, props.payload.players, props.payload.clientId]);
 
-    // room code pill button (visual only, no copy functionality)
+    
     useEffect(() => {
         let fadeTimer: ReturnType<typeof setTimeout>
         let clearTimer: ReturnType<typeof setTimeout>
@@ -64,7 +66,6 @@ export default function Room(props: RoomProps) {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 setDisplayQRCode(false);
-                setDisplayLog(false);
                 setDisplaySettings(false);
             }
         };
@@ -98,10 +99,12 @@ export default function Room(props: RoomProps) {
         }
         prevLogLenRef.current = props.payload.log.length;
         return () => {
+            setLogNoticeMessage('');
+            setLogNoticeVisible(false);
             clearTimeout(fadeTimer);
             clearTimeout(clearTimer);
         };
-    }, [props.payload.log]);
+    }, [props.payload.log, displayLog]);
 
     return (<>
 
@@ -129,6 +132,12 @@ export default function Room(props: RoomProps) {
             <img src={log_icon} alt="Log Icon -- View Log Button" ></img>
         </div>
 
+        <div className="knowledge-button" onClick={() => {
+            setDisplayKnowledge(true)
+        }}>
+            <img src={knowledge_icon} alt="Knowledge Icon -- View Knowledge Button"></img>
+        </div>
+
         <div className={`log-modal ${displayLog ? 'log-visible' : 'log-hidden'}`}>
             {/* Close button for log modal */}
             <button className="log-close-button" onClick={() => setDisplayLog(false)}>✕</button>
@@ -141,14 +150,19 @@ export default function Room(props: RoomProps) {
             </div>
         </div>
 
-        <div className="room-code-btn" onClick={() => setDisplayQRCode(prev => !prev)}>
+        <div className="room-code-btn" onClick={() => {
+            navigator.clipboard.writeText(props.payload.code);
+            setDisplayQRCode(prev => !prev);
+        }}>
             {props.payload.code}
         </div>
 
 
-
         {displayQRCode && (
-            <div className="qr-overlay" onClick={() => setDisplayQRCode(false)}>
+            <div className="qr-overlay" onClick={() =>  {
+                
+                setDisplayQRCode(false);
+            }}>
                 <div className="qr-code-container" onClick={e => e.stopPropagation()}>
                     <QRCode
                         value={window.location.href}

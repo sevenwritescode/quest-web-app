@@ -12,31 +12,10 @@ import Landing from './Landing'
 import Room from './Room';
 import { Navigate } from 'react-router-dom'
 import { io, type Socket } from 'socket.io-client';
+import type { LandingState, RoomClientState  } from "./types"
+import { canonicalDecks } from './data/decks';
 
-export type LandingState    = { 
-  name: string,
-  code: string, 
-  error?: string, 
-  hostLoading: boolean, 
-  joinLoading: boolean 
-}
 
-export type Role = "Spectator"
-export type Player       = { id: string; name?: string; Role?: Role, roleKnown: boolean, allegianceKnown: boolean}
-
-export type RoomClientState = {
-  code: string,
-  players: Player[], 
-  clientId: string, 
-  hostId: string,
-  settings: {
-    numberOfPlayers: number; 
-
-  }
-  // non-server reflected state
-  log: {mes: string, color: string}[],
-  error?: string, 
-}
 
 // 1) Top-level router
 export default function App() {
@@ -112,7 +91,18 @@ function RoomScreen() {
   if (code === undefined)
     throw new Error("Room Code is undefined");
 
-  const [payload, setPayload] = useState<RoomClientState>({ code, players: [], hostId: "", clientId: "", settings: { numberOfPlayers: 7 }, log: []});
+  const [payload, setPayload] = useState<RoomClientState>(
+    { 
+      code, 
+      players: [],
+       hostId: "",
+       clientId: "", 
+       settings: { 
+        numberOfPlayers: 7,
+        deck: canonicalDecks.p7dc
+      },
+      log: []
+    });
 
   const navigate = useNavigate();  
   const location = useLocation();
