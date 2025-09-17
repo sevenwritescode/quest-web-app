@@ -126,7 +126,8 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     const existingPlayer = room.server.players.find(p => p.id === clientId);
     if (existingPlayer) {
       // change name
-      if (existingPlayer.name !== name) {
+      // name !== undefined is to preserve previous name if they are joining from new tab
+      if (existingPlayer.name !== name && name !== undefined) {
         updatePlayerNameInRoom(room, clientId, name);
         broadcastRoomClientStates(room);
       }
