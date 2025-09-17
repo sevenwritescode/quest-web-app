@@ -11,7 +11,9 @@ import QRCode from "react-qr-code";
 interface RoomProps {
     payload: RoomClientState,
     doPayloadChange: (patch: Partial<RoomClientState>) => void,
-    onChangeName: (newName: string) => void
+    onChangeName: (newName: string) => void,
+    onLeaveClick: () => void,
+    onChangePlayerCount: (count: number) => void,
 }
 
 export default function Room(props: RoomProps) {
@@ -25,10 +27,14 @@ export default function Room(props: RoomProps) {
     const [newName, setNewName] = useState<string>(
         props.payload.players.find(p => p.id === props.payload.clientId)?.name || ''
     );
+    const [newPlayerCount, setNewPlayerCount] = useState<string>(
+        props.payload.settings.numberOfPlayers.toString()
+    );
     useEffect(() => {
         if (displaySettings) {
             const curr = props.payload.players.find(p => p.id === props.payload.clientId);
             setNewName(curr?.name || '');
+            setNewPlayerCount(props.payload.settings.numberOfPlayers.toString());
         }
     }, [displaySettings, props.payload.players, props.payload.clientId]);
 
@@ -211,17 +217,16 @@ export default function Room(props: RoomProps) {
                                         }}
                                     />
                                 </div>
-                                <div className="settings-row">
-                                    <span className="settings-label">Become Spectator</span>
+                                <div className="settings-row button-only-row">
                                     <button
-                                        className="settings-action-button"
+                                        className="only-button gray"
                                         onClick={() => console.log('TODO: implement spectator toggle')}
-                                    >Toggle Spectator</button>
+                                    >Become Spectator</button>
                                 </div>
-                                <div className="settings-row leave-row">
+                                <div className="settings-row button-only-row">
                                     <button
-                                        className="leave-room-button"
-                                        onClick={() => console.log('TODO: add leaving callback')}
+                                        className="only-button red"
+                                        onClick={props.onLeaveClick}
                                     >Leave Room</button>
                                 </div>
                             </div>
@@ -231,12 +236,18 @@ export default function Room(props: RoomProps) {
                                 `settings-section${!isHost ? ' disabled-section' : ''}`
                             }>
                                 <div className="settings-row">
-                                    <span className="settings-label">Max Players</span>
+                                    <span className="settings-label">Number of Players</span>
                                     <input
                                         className="settings-input"
-                                        type="number"
-                                        defaultValue={8}
+                                        type="input"
+                                        value={newPlayerCount}
                                         disabled={!isHost}
+                                        onChange={e => setNewPlayerCount(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter') {
+                                                props.onChangePlayerCount(Number(e.currentTarget.value))
+                                            }
+                                        }}
                                     />
                                 </div>
                                 <div className="settings-row">
@@ -250,18 +261,6 @@ export default function Room(props: RoomProps) {
                                         disabled={!isHost}
                                     />
                                 </div>
-
-                                {Array.from({ length: 20 }).map((_, idx) => (
-                                    <div key={idx} className="settings-row">
-                                        <span className="settings-label">Test Setting {idx + 1}</span>
-                                        <input
-                                            className="settings-input"
-                                            type="text"
-                                            defaultValue={`Value ${idx + 1}`}
-                                            disabled={!isHost}
-                                        />
-                                    </div>
-                                ))}
                             </div>
                         )}
                     </div>

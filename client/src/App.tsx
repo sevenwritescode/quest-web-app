@@ -29,10 +29,10 @@ export type RoomClientState = {
   players: Player[], 
   clientId: string, 
   hostId: string,
-  // settings: {
-  //   name: string,
+  settings: {
+    numberOfPlayers: number; 
 
-  // }
+  }
   // non-server reflected state
   log: {mes: string, color: string}[],
   error?: string, 
@@ -112,33 +112,33 @@ function RoomScreen() {
   if (code === undefined)
     throw new Error("Room Code is undefined");
 
-  const [payload, setPayload] = useState<RoomClientState>({ code, players: [], hostId: "", clientId: "", log: []});
+  const [payload, setPayload] = useState<RoomClientState>({ code, players: [], hostId: "", clientId: "", settings: { numberOfPlayers: 7 }, log: []});
 
   const navigate = useNavigate();  
   const location = useLocation();
   // const _navType = useNavigationType(); 
 
-  useEffect(() => {
-    const testLog = Array.from({ length: 100 }, (_, i) => ({
-      mes: `Test message ${i + 1}`,
-      color: ['red', 'green', 'blue'][i % 3],
-    }))
-    setPayload({
-      log: testLog,
-      players: 
-      [],
-      // Array.from({ length: 10 }, (_, i) => ({
-      //   id: `player${i + 1}`,
-      //   name: `Test Player ${i + 1}`,
-      //   Role: "Spectator",
-      //   roleKnown: false,
-      //   allegianceKnown: false
-      // })),
-      code: "POOP",
-      clientId: "test",
-      hostId: "test"
-    })
-  }, [])
+  // useEffect(() => {
+  //   const testLog = Array.from({ length: 100 }, (_, i) => ({
+  //     mes: `Test message ${i + 1}`,
+  //     color: ['red', 'green', 'blue'][i % 3],
+  //   }))
+  //   setPayload({
+  //     log: testLog,
+  //     players: 
+  //     [],
+  //     // Array.from({ length: 10 }, (_, i) => ({
+  //     //   id: `player${i + 1}`,
+  //     //   name: `Test Player ${i + 1}`,
+  //     //   Role: "Spectator",
+  //     //   roleKnown: false,
+  //     //   allegianceKnown: false
+  //     // })),
+  //     code: "POOP",
+  //     clientId: "test",
+  //     hostId: "test"
+  //   })
+  // }, [])
 
   const doPayloadChange = (patch: Partial<RoomClientState>) =>
     setPayload(p => ({ ...p, ...patch }))
@@ -197,11 +197,11 @@ function RoomScreen() {
       doPayloadChange({error: err});
     });
 
-    sock.on("disconnect_request", (err: string) => {
-      console.log("socket disconnect request:", err); 
+    sock.on("disconnect_request", (mes: string) => {
+      console.log("socket disconnect request:", mes); 
       sock.disconnect();
       navigate("/", {
-        state: { error: err }
+        state: { error: mes }
       });
     });
 
@@ -238,6 +238,24 @@ function RoomScreen() {
       }
     })
   }
+
+  const doLeave = () => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    } 
+    sock.emit("leaveRequest", { code })
+  }
+
+  const doChangePlayerCount = (count: number) => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    sock.emit("changePlayerCount", { count, code });
+  }
   
-  return <Room payload={payload} doPayloadChange={doPayloadChange} onChangeName={doChangeName}/>
+  return <Room payload={payload} doPayloadChange={doPayloadChange} onLeaveClick={doLeave} onChangeName={doChangeName} onChangePlayerCount={doChangePlayerCount}/>
 }

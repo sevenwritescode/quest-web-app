@@ -56,6 +56,9 @@ app.post("/api/create-room", (req, res) => {
       code: roomCode,
       players: [  ],
       hostId,
+      settings: {
+        numberOfPlayers: 7
+      },
       authToId: { [sessionAuth]: hostId } 
     },
     clients: []

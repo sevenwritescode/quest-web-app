@@ -33,11 +33,39 @@ function existsNameCollision(
   if (room.players.some(p => p.name === newName && p.id !== clientId)) {
     socket.emit(
       "error",
-      "Player Names must be unique: someone else in this lobby already has this name"
+      "Player Names must be unique: someone else in this lobby already has this name."
     );
     return true;
   }
   return false;
+}
+
+function isValidPlayerCount(socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>, count: number) {
+  if (!(4 <= count && count <= 10)) {
+    socket.emit("error", "Invalid Player Count, must be a value between 4 and 10.");
+    return false;
+  }
+  return true;
+}
+
+function removePlayerFromRoom(room: Room, clientId: string) {
+  room.server.players = room.server.players.filter((p) => p.id !== clientId);
+  room.clients = room.clients.filter((p) => p.clientId !== clientId);
+  for (const client of room.clients) {
+    client.players = client.players.filter((p) => p.id !== clientId);
+  }
+}
+
+function clientLeaveRoom(room: Room, clientId: string) {
+  removePlayerFromRoom(room,clientId);
+  const playerName = room.server.players.find((p) => p.id === clientId)?.name;
+  io.to(room.server.code).emit("logMessage",{mes: `${playerName ?? "Anonymous"} left the room.`, color: "red"});
+}
+
+function kickClientFromRoom(room: Room, clientId: string) {
+  removePlayerFromRoom(room,clientId);
+  const playerName = room.server.players.find((p) => p.id === clientId)?.name;
+  io.to(room.server.code).emit("logMessage",{mes: `${playerName} kick from room.`, color: "red"});
 }
 
 /**
@@ -58,8 +86,19 @@ function updatePlayerNameInRoom(room: Room, clientId: string, newName: string | 
       p.name = newName;
     }
   }
-  io.to(room.server.code).emit("logMessage",{mes:`${prevName ?? "Anonymous"} changed their name to ${newName}`, color: "gray"});
+  io.to(room.server.code).emit("logMessage",{mes:`${prevName ?? "Anonymous"} changed their name to ${newName}.`, color: "gray"});
 }
+
+function updatePlayerCountInRoom(room: Room, count: number) {
+  const prevCount = room.server.settings.numberOfPlayers;
+  room.server.settings.numberOfPlayers = count;
+
+  for (const clientState of room.clients) { 
+    clientState.settings.numberOfPlayers = count;
+  }
+
+  io.to(room.server.code).emit("logMessage",{mes: `Player Count for the Room has changed from ${prevCount} to ${count}.`});
+} 
 
 /**
  * Add a new client into room server and client states.
@@ -71,6 +110,9 @@ function addNewClient(room: Room, clientId: string, name?: string) {
     hostId: room.server.hostId,
     code: room.server.code,
     players: room.server.players.map(player => ({ ...player })),
+    settings: {
+      numberOfPlayers: room.server.settings.numberOfPlayers
+    }
   });
   // add to server players
   room.server.players.push({
@@ -149,6 +191,22 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
   });
 
   // add leave room
+  socket.on("leaveRequest", ({ code }: { code: string }) => {
+    const room = rooms[code];
+    if (!room) {
+      socket.emit("error", "Code note associated with room.");
+      return;
+    }
+
+    const clientId = room.server.authToId[socket.data.sessionAuth];
+    if (!clientId) {
+      socket.emit("error","Internal Server Error: clientId is not found in room."); return;
+    }
+    
+    clientLeaveRoom(room,clientId);
+    broadcastRoomClientStates(room);
+    socket.emit("disconnect_request", `You successfully left room ${room.server.code}`);
+  });
 
   // add kick player from room
 
@@ -164,7 +222,7 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
 
     const clientId = room.server.authToId[socket.data.sessionAuth];
     if (!clientId) { 
-      socket.emit("error","Internal Server Error: sessionAuth does not match clientId"); return;
+      socket.emit("error","Internal Server Error: clientId is not found in room."); return;
     }
     const player = room.server.players.find((p) => p.id === clientId);
 
@@ -177,6 +235,29 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     
     const prevName = player.name;
     updatePlayerNameInRoom(room, clientId, newName);
+    broadcastRoomClientStates(room);
+  });
+
+  socket.on("changePlayerCount", ({ count, code }: { count: number, code: string}) => {
+    const room = rooms[code];
+    if (!room) {
+      socket.emit("error", "Code not associated with room");
+      return;
+    }
+
+    const clientId = room.server.authToId[socket.data.sessionAuth];
+    if (!clientId) {
+      socket.emit("error", "Internal Server Error: clientId is not found in room."); return;
+    }
+    
+    if (clientId != room.server.hostId) {
+      socket.emit("error", `You are not the host of ${code}`);
+    }
+
+    if (!isValidPlayerCount(socket,count)) return;
+    if (room.server.settings.numberOfPlayers === count) return;
+
+    updatePlayerCountInRoom(room,count);
     broadcastRoomClientStates(room);
   });
 }
