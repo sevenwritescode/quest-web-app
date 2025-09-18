@@ -12,7 +12,7 @@ import Landing from './Landing'
 import Room from './Room';
 import { Navigate } from 'react-router-dom'
 import { io, type Socket } from 'socket.io-client';
-import type { LandingState, RoomClientState  } from "./types"
+import type { Deck, LandingState, RoomClientState  } from "./types"
 import { canonicalDecks } from './data/decks';
 
 
@@ -246,6 +246,18 @@ function RoomScreen() {
     }
     sock.emit("changePlayerCount", { count, code });
   }
+
+  const doDeckChange = (deck: Deck) => {
+
+  }
   
-  return <Room payload={payload} doPayloadChange={doPayloadChange} onLeaveClick={doLeave} onChangeName={doChangeName} onChangePlayerCount={doChangePlayerCount}/>
+  return <>
+    <Room 
+      payload={payload} 
+      doPayloadChange={doPayloadChange} 
+      onLeaveClick={doLeave} 
+      onChangeName={doChangeName} 
+      onChangePlayerCount={doChangePlayerCount} 
+      onDeckChange={doDeckChange}/>
+  </>
 }

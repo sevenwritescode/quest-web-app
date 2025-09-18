@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import type { LandingState } from "./App"
+import type { LandingState } from "./types"
 import "./css/Landing.css"
 
 interface LandingProps {

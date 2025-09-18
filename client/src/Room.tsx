@@ -1,11 +1,12 @@
 // import React from "react";
-import type { RoomClientState  } from "./types"
+import type { RoomClientState, Deck, RolePool } from "./types"
 import { useEffect, useState, useRef } from "react";
 import "./css/index.css";
 import "./css/Room.css";
-import gear_icon from './assets/Gear_icon_svg.svg';
-import log_icon from './assets/system-log-2.png';
-import knowledge_icon from './assets/books-17.svg';
+import gear_icon from './assets/icons/Gear_icon_svg.svg';
+import log_icon from './assets/icons/system-log-2.png';
+import knowledge_icon from './assets/icons/books-17.svg';
+import { canonicalDecks } from "./data/decks";
 import QRCode from "react-qr-code";
 
 
@@ -15,17 +16,50 @@ interface RoomProps {
     onChangeName: (newName: string) => void,
     onLeaveClick: () => void,
     onChangePlayerCount: (count: number) => void,
+    onDeckChange: (deck: Deck) => void
 }
 
 export default function Room(props: RoomProps) {
     const [displayQRCode, setDisplayQRCode] = useState(false);
     const [displayLog, setDisplayLog] = useState(false);
-    const [displaySettings, setDisplaySettings] = useState(false);
     const [displayKnowledge, setDisplayKnowledge] = useState(false);
+    // Modal stack for nested dialogs
+    const [modalStack, setModalStack] = useState<string[]>([]);
+    const pushModal = (modal: string) => setModalStack(stack => [...stack, modal]);
+    const popModal = () => setModalStack(stack => stack.slice(0, -1));
+    // Derived flags
+    const showSettingsModal = modalStack.includes('settings');
+    const showDeckEditor = modalStack.includes('deckEditor');
+    const [deckEditorMode, setDeckEditorMode] = useState<'canonical' | 'json'>('canonical');
+    const deckKeys = Object.keys(canonicalDecks) as Array<keyof typeof canonicalDecks>;
+    const [selectedDeckKey, setSelectedDeckKey] = useState<keyof typeof canonicalDecks>(deckKeys[0]);
+    const [customDeckJson, setCustomDeckJson] = useState('');
+    const [jsonError, setJsonError] = useState<string | null>(null);
     const [settingsTab, setSettingsTab] = useState<'client' | 'game'>('client');
     const [errorVisible, setErrorVisible] = useState(false);
     const logRef = useRef<HTMLDivElement>(null);
     const isHost = props.payload.clientId === props.payload.hostId;
+    // Helper to render deck preview
+    const renderDeckPreview = () => (
+        props.payload.settings.deck.items.map((item, idx) => {
+            if (typeof item === "string") {
+                const role = item;
+                const src = new URL(`./assets/roles/${role}.png`, import.meta.url).href;
+                return <img key={idx} src={src} alt={role} className="deck-card" />;
+            } else {
+                const pool = item as RolePool;
+                return (
+                    <div key={idx} className="role-pool">
+                        {pool.roles.map((role, i) => {
+                            const src = new URL(`./assets/roles/${role}.png`, import.meta.url).href;
+                            return <img key={i} src={src} alt={role} className="deck-card pool-role" />;
+                        })}
+                        <div className="role-pool-badge">⊃{pool.draw}</div>
+                    </div>
+                );
+            }
+        })
+    );
     const [newName, setNewName] = useState<string>(
         props.payload.players.find(p => p.id === props.payload.clientId)?.name || ''
     );
@@ -33,12 +67,12 @@ export default function Room(props: RoomProps) {
         props.payload.settings.numberOfPlayers.toString()
     );
     useEffect(() => {
-        if (displaySettings) {
+        if (showSettingsModal) {
             const curr = props.payload.players.find(p => p.id === props.payload.clientId);
             setNewName(curr?.name || '');
             setNewPlayerCount(props.payload.settings.numberOfPlayers.toString());
         }
-    }, [displaySettings, props.payload.players, props.payload.clientId]);
+    }, [showSettingsModal, props.payload.players, props.payload.clientId]);
 
     
     useEffect(() => {
@@ -65,14 +99,23 @@ export default function Room(props: RoomProps) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                setDisplayQRCode(false);
-                setDisplaySettings(false);
+                console.log(modalStack.length);
+                if (modalStack.length > 0) {
+                    popModal();
+                } else if (displayQRCode) {
+                    setDisplayQRCode(false);
+                } else if (displayLog) {
+                    setDisplayLog(false);
+                } else if (displayKnowledge) {
+                    setDisplayKnowledge(false);
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    // re-run to capture latest modalStack and display flags
+    }, [modalStack, displayQRCode, displayLog, displayKnowledge]);
 
     useEffect(() => {
         if (displayLog && logRef.current) {
@@ -120,9 +163,7 @@ export default function Room(props: RoomProps) {
             </div>
         )}
 
-        <div className="settings-button" onClick={() => {
-            setDisplaySettings(true);
-        }} >
+        <div className="settings-button" onClick={() => pushModal('settings')} >
             <img src={gear_icon} alt="Gear Icon -- Settings Button" />
         </div>
 
@@ -200,10 +241,10 @@ export default function Room(props: RoomProps) {
                 </div>
             ))}
         </div>
-        {displaySettings && (
-            <div className="settings-overlay" onClick={() => setDisplaySettings(false)}>
+        {showSettingsModal && (
+            <div className="settings-overlay" onClick={() => popModal()}>
                 <div className="settings-modal" onClick={e => e.stopPropagation()}>
-                    <button className="settings-close-button" onClick={() => setDisplaySettings(false)}>✕</button>
+                    <button className="settings-close-button" onClick={() => popModal()}>✕</button>
                     <div className="settings-tabs">
                         <button
                             className={settingsTab === 'client' ? 'active' : ''}
@@ -275,8 +316,98 @@ export default function Room(props: RoomProps) {
                                         disabled={!isHost}
                                     />
                                 </div>
+                                {/* Deck preview */}
+                                <div className="settings-row">
+                                    <span className="settings-label">Deck</span>
+                                </div>
+                                <div className="settings-row deck-preview-row">
+                                    <div className="deck-preview">
+                                        {renderDeckPreview()}
+                                    </div>
+                                </div>
+                                <div className="settings-row button-only-row">
+                                    <button
+                                        className="settings-action-button only-button"
+                                        disabled={!isHost}
+                                        onClick={() => pushModal('deckEditor')}
+                                    >
+                                        Edit Deck
+                                    </button>
+                                </div>
                             </div>
                         )}
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* Deck Editor Modal */}
+    {showDeckEditor && (
+            <div className="deck-editor-overlay" onClick={() => popModal()}>
+                <div className="deck-editor-modal" onClick={e => e.stopPropagation()}>
+                    <div className="settings-tabs">
+                        <button
+                            className={deckEditorMode === 'canonical' ? 'active' : ''}
+                            onClick={() => setDeckEditorMode('canonical')}
+                        >Preset Decks</button>
+                        <button
+                            className={deckEditorMode === 'json' ? 'active' : ''}
+                            onClick={() => setDeckEditorMode('json')}
+                        >Custom JSON</button>
+                    </div>
+                    <div className="settings-content">
+                        {deckEditorMode === 'canonical' && (
+                            <div className="settings-section">
+                                {deckKeys.map(key => (
+                                    <div key={key} className="settings-row">
+                                        <label>
+                                            <input
+                                                type="radio"
+                                                name="preset-deck"
+                                                value={key}
+                                                checked={selectedDeckKey === key}
+                                                onChange={() => setSelectedDeckKey(key)}
+                                            /> {key}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {deckEditorMode === 'json' && (
+                            <div className="settings-section">
+                                <textarea
+                                    className="settings-input"
+                                    style={{ height: '200px', fontFamily: 'monospace' }}
+                                    value={customDeckJson}
+                                    onChange={e => setCustomDeckJson(e.target.value)}
+                                />
+                                {jsonError && <div className="error-banner-small">{jsonError}</div>}
+                            </div>
+                        )}
+                    </div>
+                    <div className="settings-row button-only-row" style={{ marginTop: '1rem' }}>
+                        <button
+                            className="only-button gray"
+                            onClick={() => popModal()}
+                        >Cancel</button>
+                        <button
+                            className="only-button gray"
+                            onClick={() => {
+                                if (deckEditorMode === 'canonical') {
+                                    props.onDeckChange(canonicalDecks[selectedDeckKey]);
+                                    popModal();
+                                } else {
+                                    try {
+                                        const deck = JSON.parse(customDeckJson) as Deck;
+                                        props.onDeckChange(deck);
+                                        setJsonError(null);
+                                        popModal();
+                                    } catch (e: any) {
+                                        setJsonError('Invalid JSON');
+                                    }
+                                }
+                            }}
+                        >Save</button>
                     </div>
                 </div>
             </div>

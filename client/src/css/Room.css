@@ -85,6 +85,72 @@
     padding-right: 0.5rem;
     scrollbar-gutter: stable;
 }
+/* Deck preview scrollable */
+.deck-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+/* adjust .deck-card size here to tweak thumbnail dimensions */
+.deck-card {
+    width: auto;
+    height: 215px;
+    object-fit: contain;
+}
+.role-pool {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    width: calc(64px *2 + 25px);
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+.pool-role {
+    width: 64px;
+    height: 90px;
+}
+.role-pool-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: #555;
+    color: #fff;
+    border-radius: 50%;
+    padding: 2px 5px;
+    font-size: 0.75rem;
+}
+/* Deck Editor modal */
+.deck-editor-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 4000;
+}
+.deck-editor-modal {
+    background: #2d2d2d;
+    color: #fff;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+.error-banner-small {
+    color: #fcc;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+}
 /* Custom scrollbar for settings-content in WebKit browsers */
 .settings-content::-webkit-scrollbar {
     width: 8px;
@@ -125,7 +191,7 @@
 .disabled-section  .settings-label {
     color: #939393;
 }
-.settings-input:disabled {
+.settings-input:disabled, .only-button:disabled {
     opacity: 0.6;
 }
 .settings-action-button {
@@ -146,6 +212,7 @@
     border-radius: 0.25rem;
     cursor: pointer;
 }
+
 .only-button.red {
     background: #b91c1c;
 }
