@@ -59,7 +59,7 @@ app.post("/api/create-room", (req, res) => {
       hostId,
       settings: {
         numberOfPlayers: 7,
-        deck: canonicalDecks.p7dc
+        deck: canonicalDecks.p8dc
       },
       authToId: { [sessionAuth]: hostId } 
     },

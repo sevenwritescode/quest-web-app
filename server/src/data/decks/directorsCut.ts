@@ -1,4 +1,4 @@
-import type { Deck } from "../../types"
+import type { Deck } from "../../types.ts"
 
 
 export const p4dc: Deck = {
@@ -69,11 +69,11 @@ export const p7dc: Deck = {
 
 export const p8dc: Deck = {
     items: [
-        "Loyal Servant of Arthur",
         "Cleric",
         {
-            draw: 1,
+            draw: 2,
             roles: [
+                "Loyal Servant of Arthur",
                 "Troublemaker",
                 "Youth"
             ]
@@ -88,11 +88,11 @@ export const p8dc: Deck = {
 
 export const p9dc: Deck = {
     items: [
-        "Loyal Servant of Arthur",
         "Cleric",
         {
-            draw: 1,
+            draw: 2,
             roles: [
+                "Loyal Servant of Arthur",
                 "Troublemaker",
                 "Youth"
             ]
@@ -108,11 +108,11 @@ export const p9dc: Deck = {
 
 export const p10dc: Deck = {
     items: [
-        "Loyal Servant of Arthur",
         "Cleric",
         {
-            draw: 1,
+            draw: 2,
             roles: [
+                "Loyal Servant of Arthur",
                 "Troublemaker",
                 "Youth"
             ]

@@ -1,4 +1,4 @@
-import type { Deck } from "../../types"
+import type { Deck } from "../../types.ts"
 
 
 export const p4b: Deck = {
