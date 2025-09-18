@@ -71,7 +71,7 @@ export const DirectorsCut8Player: Deck = {
     items: [
         "Cleric",
         {
-            draw: 1,
+            draw: 2,
             roles: [
                 "Loyal Servant of Arthur",
                 "Troublemaker",
@@ -90,7 +90,7 @@ export const DirectorsCut9Player: Deck = {
     items: [
         "Cleric",
         {
-            draw: 1,
+            draw: 2,
             roles: [
                 "Loyal Servant of Arthur",
                 "Troublemaker",
@@ -110,7 +110,7 @@ export const DirectorsCut10Player: Deck = {
     items: [
         "Cleric",
         {
-            draw: 1,
+            draw: 2,
             roles: [
                 "Loyal Servant of Arthur",
                 "Troublemaker",
