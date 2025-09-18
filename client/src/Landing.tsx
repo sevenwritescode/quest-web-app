@@ -41,6 +41,17 @@ export default function Landing(props: LandingProps) {
     props.doPayloadChange({ code: input })
   }
 
+  // global Enter key listener to join when a code is present
+  useEffect(() => {
+    const handleGlobalEnter = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        props.doJoinClick();
+      }
+    }
+    window.addEventListener('keydown', handleGlobalEnter)
+    return () => window.removeEventListener('keydown', handleGlobalEnter)
+  }, [props.doJoinClick])
+
   return ( 
     <>
       {/* flash-type error banner */}

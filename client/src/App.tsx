@@ -98,7 +98,6 @@ function RoomScreen() {
        hostId: "",
        clientId: "", 
        settings: { 
-        numberOfPlayers: 7,
         deck: canonicalDecks.DirectorsCut7Player
       },
       log: []
@@ -139,6 +138,7 @@ function RoomScreen() {
     setPayload(p => ({ ...p, ...patch }))
 
   const sockRef = useRef<Socket|null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (code === "" || code === undefined) {
@@ -175,6 +175,7 @@ function RoomScreen() {
 
     sock.on("connect", () => {
       sock.emit("join", { code, name });
+      setIsLoading(false);
     });
 
     sock.on("roomStateUpdate", (state: Partial<RoomClientState>) => {
@@ -234,6 +235,15 @@ function RoomScreen() {
     })
   }
 
+  const doBecomeSpectator = () => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    } 
+    sock.emit("becomeSpectator", { code });
+  }
+
   const doLeave = () => {
     const sock = sockRef.current;
     if (!sock || sock.disconnected) {
@@ -241,15 +251,6 @@ function RoomScreen() {
       return;
     } 
     sock.emit("leaveRequest", { code })
-  }
-
-  const doChangePlayerCount = (count: number) => {
-    const sock = sockRef.current;
-    if (!sock || sock.disconnected) {
-      console.warn("socket not ready yet");
-      return;
-    }
-    sock.emit("changePlayerCount", { count, code });
   }
 
   const doDeckChange = (deck: Deck) => {
@@ -260,14 +261,49 @@ function RoomScreen() {
     }
     sock.emit("changeDeck", { deck, code });
   }
+
+  const doKickPlayer = (playerId: string) => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    } 
+    sock.emit("kickPlayer", { playerId, code });
+  }
+
+  const doToggleSpectator = (playerId: string) => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    sock.emit("toggleSpectator", { playerId, code });
+  }
+
+  const doReorderPlayers = (playerIds: string[]) => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    sock.emit("reorderPlayers", { playerIds, code }); 
+  }
   
+  if (isLoading) {
+    return <div className="loading">Connecting to room...</div>;
+  }
+
   return <>
     <Room 
       payload={payload} 
       doPayloadChange={doPayloadChange} 
       onLeaveClick={doLeave} 
-      onChangeName={doChangeName} 
-      onChangePlayerCount={doChangePlayerCount} 
-      onDeckChange={doDeckChange}/>
+      onChangeName={doChangeName}
+      onBecomeSpectator={doBecomeSpectator}
+      onDeckChange={doDeckChange}
+      onKickPlayer={doKickPlayer}
+      onToggleSpectator={doToggleSpectator}
+      onReorderPlayers={doReorderPlayers}
+      />
   </>
 }

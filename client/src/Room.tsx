@@ -1,6 +1,7 @@
-// import React from "react";
-import type { RoomClientState, Deck, RolePool } from "./types"
-import { useEffect, useState, useRef } from "react";
+import type { RoomClientState, Deck, RolePool } from './types';
+import { useEffect, useState, useRef } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import type { DropResult, DroppableProvided, DraggableProvided } from '@hello-pangea/dnd';
 import "./css/index.css";
 import "./css/Room.css";
 import gear_icon from './assets/icons/Gear_icon_svg.svg';
@@ -14,9 +15,12 @@ interface RoomProps {
     payload: RoomClientState,
     doPayloadChange: (patch: Partial<RoomClientState>) => void,
     onChangeName: (newName: string) => void,
+    onBecomeSpectator: () => void,
     onLeaveClick: () => void,
-    onChangePlayerCount: (count: number) => void,
-    onDeckChange: (deck: Deck) => void
+    onDeckChange: (deck: Deck) => void,
+    onKickPlayer: (playerId: string) => void,
+    onToggleSpectator: (playerId: string) => void,
+    onReorderPlayers: (newOrder: string[]) => void
 }
 
 export default function Room(props: RoomProps) {
@@ -63,14 +67,10 @@ export default function Room(props: RoomProps) {
     const [newName, setNewName] = useState<string>(
         props.payload.players.find(p => p.id === props.payload.clientId)?.name || ''
     );
-    const [newPlayerCount, setNewPlayerCount] = useState<string>(
-        props.payload.settings.numberOfPlayers.toString()
-    );
     useEffect(() => {
         if (showSettingsModal) {
             const curr = props.payload.players.find(p => p.id === props.payload.clientId);
             setNewName(curr?.name || '');
-            setNewPlayerCount(props.payload.settings.numberOfPlayers.toString());
         }
     }, [showSettingsModal, props.payload.players, props.payload.clientId]);
 
@@ -122,6 +122,19 @@ export default function Room(props: RoomProps) {
             logRef.current.scrollTop = logRef.current.scrollHeight;
         }
     }, [props.payload.log, displayLog]);
+
+    // Handler for react-beautiful-dnd drag end
+    const onDragEnd = (result: DropResult) => {
+        const { source, destination } = result;
+        if (!destination) return;
+        if (source.index === destination.index) return;
+        const players = Array.from(props.payload.players);
+        const [moved] = players.splice(source.index, 1);
+    players.splice(destination.index, 0, moved);
+    // Optimistically update local UI before server confirmation
+    props.doPayloadChange({ players });
+    props.onReorderPlayers(players.map(p => p.id));
+    };
 
     // State and effect for log-notice banner
     const [logNoticeMessage, setLogNoticeMessage] = useState<string>('');
@@ -228,7 +241,7 @@ export default function Room(props: RoomProps) {
                             : <div className="anonymous">Anonymous</div>
                         }
                         <div className={"role-name "
-                            + (player.Role === "Spectator" ? "spectator" : "")}>
+                            + (player.Role === "Spectator" ? "Spectator" : "")}>
                             {player.Role}
                         </div>
                         <div className="player-badges">
@@ -279,7 +292,7 @@ export default function Room(props: RoomProps) {
                                 <div className="settings-row button-only-row">
                                     <button
                                         className="only-button gray"
-                                        onClick={() => console.log('TODO: implement spectator toggle')}
+                                        onClick={props.onBecomeSpectator}
                                     >Become Spectator</button>
                                 </div>
                                 <div className="settings-row button-only-row">
@@ -294,22 +307,7 @@ export default function Room(props: RoomProps) {
                             <div className={
                                 `settings-section${!isHost ? ' disabled-section' : ''}`
                             }>
-                                <div className="settings-row">
-                                    <span className="settings-label">Number of Players</span>
-                                    <input
-                                        className="settings-input"
-                                        type="input"
-                                        value={newPlayerCount}
-                                        disabled={!isHost}
-                                        onChange={e => setNewPlayerCount(e.target.value)}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter') {
-                                                props.onChangePlayerCount(Number(e.currentTarget.value))
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                <div className="settings-row">
+                                {/* <div className="settings-row">
                                     <span className="settings-label">Round Time</span>
                                     <input
                                         className="settings-input"
@@ -319,8 +317,19 @@ export default function Room(props: RoomProps) {
                                         defaultValue={60}
                                         disabled={!isHost}
                                     />
-                                </div>
+                                </div> */}
                                 {/* Deck preview */}
+                                <div className="settings-row">
+                                    <span className="settings-label">Director's Cut</span>
+                                    <input
+                                        className="settings-input"
+                                        type="checkbox"
+                                        disabled={true}
+                                        title="Director's Cut Rules are determined by deck selection."
+                                        checked={props.payload.settings.deck.directorsCut} 
+                                    />
+                                </div>
+
                                 <div className="settings-row">
                                     <span className="settings-label">Deck</span>
                                 </div>
@@ -338,6 +347,54 @@ export default function Room(props: RoomProps) {
                                         Edit Deck
                                     </button>
                                 </div>
+                                {/* Player Manager */}
+                                <DragDropContext onDragEnd={onDragEnd}>
+                                    <Droppable droppableId="players">
+                                        {(provided: DroppableProvided) => (
+                                            <div
+                                                className="settings-section player-manager-section"
+                                                ref={provided.innerRef}
+                                                {...provided.droppableProps}
+                                            >
+                                                <div className="settings-label">Player Manager</div>
+                                                {props.payload.players.map((player, idx) => (
+                                                    <Draggable
+                                                        key={player.id}
+                                                        draggableId={player.id}
+                                                        index={idx}
+                                                        isDragDisabled={!isHost}
+                                                    >
+                                                        {(prov: DraggableProvided) => (
+                                                            <div
+                                                                className="player-manager-item"
+                                                                ref={prov.innerRef}
+                                                                {...prov.draggableProps}
+                                                                {...prov.dragHandleProps}
+                                                            >
+                                                                <span className="drag-handle">≡</span>
+                                                                {player.name
+                                                                    ? <div className="player-name">{player.name}</div>
+                                                                    : <div className="anonymous">Anonymous</div>
+                                                                }
+                                                                <button
+                                                                    className="spectator-button"
+                                                                    disabled={!isHost}
+                                                                    onClick={() => props.onToggleSpectator(player.id)}
+                                                                >{player.Role === 'Spectator' ? 'Un-spectate' : 'Spectate'}</button>
+                                                                <button
+                                                                    className={`kick-button${player.id === props.payload.hostId ? ' hidden' : ''}`}
+                                                                    disabled={!isHost || player.id === props.payload.hostId}
+                                                                    onClick={() => props.onKickPlayer(player.id)}
+                                                                >Kick</button>
+                                                            </div>
+                                                        )}
+                                                    </Draggable>
+                                                ))}
+                                                {provided.placeholder}
+                                            </div>
+                                        )}
+                                    </Droppable>
+                                </DragDropContext>
                             </div>
                         )}
                     </div>

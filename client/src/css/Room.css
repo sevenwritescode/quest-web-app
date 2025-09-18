@@ -155,6 +155,58 @@
 .settings-content::-webkit-scrollbar {
     width: 8px;
 }
+/* Player Manager Styles */
+.player-manager-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+.player-manager-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: #3d3d3d;
+    border-radius: 0.25rem;
+    cursor: grab;
+}
+.player-manager-item:active {
+    cursor: grabbing;
+}
+.drag-handle {
+    cursor: grab;
+    font-size: 1.25rem;
+    /* disable scrolling when interacting with handle on touch devices */
+    touch-action: none;
+    -ms-touch-action: none;
+}
+.kick-button,
+.spectator-button {
+    margin-left: auto;
+/* hidden but occupy space */
+    border: none;
+    border-radius: 0.25rem;
+    background: #555;
+    color: #fff;
+    cursor: pointer;
+}
+.kick-button {
+    margin-left: 0.25rem;
+    background: #dc2626;
+}
+/*// hidden but occupy space*/
+.kick-button.hidden {
+    visibility: hidden;
+}
+.spectator-button {
+    background: #444;
+}
+.kick-button:disabled,
+.spectator-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 .settings-content::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
@@ -186,7 +238,9 @@
     border: 1px solid #555;
     background: #3d3d3d;
     color: #fff;
+    
 }
+
 /* Labels in disabled sections should be grayed-out */
 .disabled-section  .settings-label {
     color: #939393;

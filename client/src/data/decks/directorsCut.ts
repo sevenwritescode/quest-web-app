@@ -2,6 +2,7 @@ import type { Deck } from "../../types"
 
 
 export const DirectorsCut4Player: Deck = {
+    directorsCut: true,
     items: [
         {
             draw: 2,
@@ -17,6 +18,7 @@ export const DirectorsCut4Player: Deck = {
 } as const;
 
 export const DirectorsCut5Player: Deck = {
+    directorsCut: true,
     items: [
         {
             draw: 2,
@@ -33,6 +35,7 @@ export const DirectorsCut5Player: Deck = {
 } as const;
 
 export const DirectorsCut6Player: Deck = {
+    directorsCut: true,
     items: [
         "Cleric",
         {
@@ -50,6 +53,7 @@ export const DirectorsCut6Player: Deck = {
 } as const;
 
 export const DirectorsCut7Player: Deck = {
+    directorsCut: true,
     items: [
         "Cleric",
         {
@@ -68,6 +72,7 @@ export const DirectorsCut7Player: Deck = {
 } as const;
 
 export const DirectorsCut8Player: Deck = {
+    directorsCut: true,
     items: [
         "Cleric",
         {
@@ -87,6 +92,7 @@ export const DirectorsCut8Player: Deck = {
 } as const;
 
 export const DirectorsCut9Player: Deck = {
+    directorsCut: true,
     items: [
         "Cleric",
         {
@@ -107,6 +113,7 @@ export const DirectorsCut9Player: Deck = {
 } as const;
 
 export const DirectorsCut10Player: Deck = {
+    directorsCut: true,
     items: [
         "Cleric",
         {

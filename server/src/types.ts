@@ -1,5 +1,7 @@
 export type Role =
   | "Spectator"
+  | "No Role"
+  | "Unknown"
   | "Morgan Le Fay"
   | "Minion of Mordred"
   | "Blind Hunter"
@@ -31,6 +33,7 @@ export type RolePool = {
 }
 
 export type Deck = {
+  directorsCut: boolean,
   items: DeckItem[]
 }
 
@@ -40,7 +43,6 @@ export type RoomClientState = {
   clientId: string, 
   hostId: string,
   settings: {
-    numberOfPlayers: number,
     deck: Deck,
   }
 }

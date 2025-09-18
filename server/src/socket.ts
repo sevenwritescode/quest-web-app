@@ -29,7 +29,7 @@ function validateHost(
     return "";
   }
   if (clientId != room.server.hostId) {
-    socket.emit("error", `You are not the host of ${room.server.code}`);
+    socket.emit("error", `You are not the host of ${room.server.code}.`);
     return "";
   }
   return clientId;
@@ -80,6 +80,20 @@ function isValidPlayerCount(socket: Socket<DefaultEventsMap, DefaultEventsMap, D
   return true;
 }
 
+function clientBecomeSpectator(room: Room, clientId: string) {
+  const playerOnServer = room.server.players.find((p) => p.id === clientId);
+  if (!playerOnServer || playerOnServer.Role === "Spectator") {
+    return;
+  }
+  playerOnServer.Role = "Spectator";
+  for (const client of room.clients) {
+    const playerOnClient = client.players.find(p => p.id === clientId); 
+    if (!playerOnClient) { throw new Error(`Player with id ${clientId} not found in room.`); }
+    playerOnClient.Role = "Spectator";
+  }
+  io.to(room.server.code).emit("logMessage", `${playerOnServer.name} is now a spectator.`);
+}
+
 function removePlayerFromRoom(room: Room, clientId: string) {
   room.server.players = room.server.players.filter((p) => p.id !== clientId);
   room.clients = room.clients.filter((p) => p.clientId !== clientId);
@@ -94,10 +108,55 @@ function clientLeaveRoom(room: Room, clientId: string) {
   io.to(room.server.code).emit("logMessage",{mes: `${playerName ?? "Anonymous"} left the room.`, color: "red"});
 }
 
-function kickClientFromRoom(room: Room, clientId: string) {
-  removePlayerFromRoom(room,clientId);
-  const playerName = room.server.players.find((p) => p.id === clientId)?.name;
-  io.to(room.server.code).emit("logMessage",{mes: `${playerName} kick from room.`, color: "red"});
+function kickPlayerFromRoom(room: Room, playerId: string) {
+  const playerName = room.server.players.find((p) => p.id === playerId)?.name;
+  removePlayerFromRoom(room,playerId);
+  io.to(room.server.code).emit("logMessage",{mes: `${playerName ?? "Anonymous"} was kicked.`, color: "red"});
+}
+
+function togglePlayerSpectator(room: Room, playerId: string) {
+  const playerOnServer = room.server.players.find((p) => p.id === playerId);
+  if (!playerOnServer) { throw Error("Player with this playerId not in room."); }
+  if (playerOnServer.Role === "Spectator") {
+    playerOnServer.Role = "No Role";
+  }
+  else {
+    playerOnServer.Role = "Spectator";
+  }
+  for (const client of room.clients) {
+    const playerOnClient = client.players.find((p) => p.id === playerId);
+    if (!playerOnClient) { throw Error("Player with this playerId is not found in at least one client.")}
+    playerOnClient.Role = playerOnServer.Role;
+  }
+  const mes = playerOnServer.Role === "Spectator" 
+              ? `${playerOnServer.name ?? "Anonymous"} is now a spectator.` 
+              : `${playerOnServer.name ?? "Anonymous"} is no longer a spectator.`;
+  io.to(room.server.code).emit("logMessage", {mes, color: "gray"});
+}
+
+function reorderPlayers(room: Room, playerIds: string[]) {
+  // Reorder server-side players according to new order
+  const newServerOrder = playerIds.map(id => {
+    const player = room.server.players.find(p => p.id === id);
+    if (!player) {
+      throw new Error(`Player with id ${id} not found in room.`);
+    }
+    return player;
+  });
+  room.server.players = newServerOrder;
+  // Reorder client-side player lists
+  for (const client of room.clients) {
+    const newClientOrder = playerIds.map(id => {
+      const player = client.players.find(p => p.id === id);
+      if (!player) {
+        throw new Error(`Player with id ${id} not found in client view.`);
+      }
+      return player;
+    });
+    client.players = newClientOrder;
+  }
+  // Notify clients of reorder
+  io.to(room.server.code).emit("logMessage", { mes: "Players reordered.", color: "gray" });
 }
 
 /**
@@ -121,23 +180,13 @@ function updatePlayerNameInRoom(room: Room, clientId: string, newName: string | 
   io.to(room.server.code).emit("logMessage",{mes:`${prevName ?? "Anonymous"} changed their name to ${newName}.`, color: "gray"});
 }
 
-function updatePlayerCountInRoom(room: Room, count: number) {
-  const prevCount = room.server.settings.numberOfPlayers;
-  room.server.settings.numberOfPlayers = count;
-
-  for (const clientState of room.clients) { 
-    clientState.settings.numberOfPlayers = count;
-  }
-
-  io.to(room.server.code).emit("logMessage",{mes: `Player Count for the Room has changed from ${prevCount} to ${count}.`});
-} 
 
 function updateDeckInRoom(room: Room, deck: Deck) {
   room.server.settings.deck = deck;
   for (const clientState of room.clients) { 
     clientState.settings.deck = deck;
   }
-  io.to(room.server.code).emit("logMessage", { mes: `Host updated Deck`});
+  io.to(room.server.code).emit("logMessage", { mes: `Host updated Deck.`});
 }
 
 /**
@@ -151,7 +200,6 @@ function addNewClient(room: Room, clientId: string, name?: string) {
     code: room.server.code,
     players: room.server.players.map(player => ({ ...player })),
     settings: {
-      numberOfPlayers: room.server.settings.numberOfPlayers,
       deck: JSON.parse(JSON.stringify(room.server.settings.deck))
     }
   });
@@ -231,6 +279,15 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     );
   });
 
+  socket.on("becomeSpectator", ({ code }: { code: string }) => {
+    const room = rooms[code];
+    const clientId = validateClient(socket,room);
+    if (!clientId || !room) { return; } 
+
+    clientBecomeSpectator(room,clientId);
+    broadcastRoomClientStates(room);
+  });
+
   // add leave room
   socket.on("leaveRequest", ({ code }: { code: string }) => {
     const room = rooms[code];
@@ -266,24 +323,48 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
     broadcastRoomClientStates(room);
   });
 
-  socket.on("changePlayerCount", ({ count, code }: { count: number, code: string}) => {
-    const room = rooms[code];
-    const clientId = validateHost(socket,room);
-    if (!clientId || !room) { return; }
-
-    if (!isValidPlayerCount(socket,count)) return;
-    if (room.server.settings.numberOfPlayers === count) return;
-
-    updatePlayerCountInRoom(room,count);
-    broadcastRoomClientStates(room);
-  });
-
   socket.on("changeDeck", ({ deck, code }: { deck: Deck, code: string }) => {
     const room = rooms[code];
     const clientId = validateHost(socket,room);
     if (!clientId || !room) { return; }
     
     updateDeckInRoom(room, deck);
+    broadcastRoomClientStates(room);
+  });
+
+  socket.on("kickPlayer", ({ playerId, code }: { playerId: string, code: string}) => {
+    const room = rooms[code];
+    const clientId = validateHost(socket,room);
+    if (!clientId || !room) { return; }
+
+    kickPlayerFromRoom(room,playerId);
+    broadcastRoomClientStates(room);
+    io.to(playerId).emit("disconnect_request", `You were kicked from ${room.server.code}`);
+  });
+
+  socket.on("toggleSpectator", ({ playerId, code }: { playerId: string, code: string}) => {
+    const room = rooms[code];
+    const clientId = validateHost(socket,room);
+    if (!clientId || !room) { return; }
+    
+    if (!room.server.players.some((p) => p.id === playerId)) {
+      socket.emit("error", "Player with this id does not exist in this Room");
+    }
+    togglePlayerSpectator(room,playerId);
+    broadcastRoomClientStates(room);
+  });
+
+  socket.on("reorderPlayers", ({ playerIds, code }: { playerIds: string[], code: string}) => {
+    const room = rooms[code];
+    const clientId = validateHost(socket,room);
+    if (!clientId || !room) { return; }
+    
+    for (const playerId of playerIds) {
+      if (!room.server.players.some((p) => p.id === playerId)) {
+        socket.emit("error", "At least one player in the given list is not in this room.");
+      }
+    }
+    reorderPlayers(room,playerIds);
     broadcastRoomClientStates(room);
   });
 }
