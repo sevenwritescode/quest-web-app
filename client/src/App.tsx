@@ -99,7 +99,7 @@ function RoomScreen() {
        clientId: "", 
        settings: { 
         numberOfPlayers: 7,
-        deck: canonicalDecks.p7dc
+        deck: canonicalDecks.DirectorsCut7Player
       },
       log: []
     });
