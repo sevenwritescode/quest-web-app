@@ -95,7 +95,7 @@
 }
 /* adjust .deck-card size here to tweak thumbnail dimensions */
 .deck-card {
-    width: auto;
+    width: 154px;
     height: 215px;
     object-fit: contain;
 }
