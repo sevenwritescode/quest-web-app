@@ -247,8 +247,13 @@ function RoomScreen() {
     sock.emit("changePlayerCount", { count, code });
   }
 
-  const doDeckChange = (_deck: Deck) => {
-
+  const doDeckChange = (deck: Deck) => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    sock.emit("changeDeck", { deck, code });
   }
   
   return <>

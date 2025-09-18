@@ -1,7 +1,39 @@
 import type { DefaultEventsMap, Socket } from "socket.io";
-import type { Room, RoomServerState } from "./types.ts";
+import type { Deck, Room, RoomServerState } from "./types.ts";
 import { io, rooms } from "./index.js";
 import { v4 as uuid } from 'uuid';
+
+function validateClient(
+  socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
+  room: Room | undefined
+): string {
+  if (!room) {
+    socket.emit("error", "Code not associated with room");
+    return "";
+  }
+  const clientId = room.server.authToId[socket.data.sessionAuth];
+  if (!clientId) {
+    socket.emit("error", "Internal Server Error: clientId is not found in room."); 
+    return "";
+  }
+  return clientId;
+}
+
+function validateHost(
+  socket: Socket<DefaultEventsMap,DefaultEventsMap,DefaultEventsMap,any>,
+  room: Room | undefined
+): string {
+  const clientId = validateClient(socket,room);
+  if (!clientId || !room)
+  {
+    return "";
+  }
+  if (clientId != room.server.hostId) {
+    socket.emit("error", `You are not the host of ${room.server.code}`);
+    return "";
+  }
+  return clientId;
+}
 
 /**
  * Validate player display name. Emits error on socket if invalid.
@@ -100,6 +132,14 @@ function updatePlayerCountInRoom(room: Room, count: number) {
   io.to(room.server.code).emit("logMessage",{mes: `Player Count for the Room has changed from ${prevCount} to ${count}.`});
 } 
 
+function updateDeckInRoom(room: Room, deck: Deck) {
+  room.server.settings.deck = deck;
+  for (const clientState of room.clients) { 
+    clientState.settings.deck = deck;
+  }
+  io.to(room.server.code).emit("logMessage", { mes: `Host updated Deck`});
+}
+
 /**
  * Add a new client into room server and client states.
  */
@@ -194,15 +234,8 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
   // add leave room
   socket.on("leaveRequest", ({ code }: { code: string }) => {
     const room = rooms[code];
-    if (!room) {
-      socket.emit("error", "Code note associated with room.");
-      return;
-    }
-
-    const clientId = room.server.authToId[socket.data.sessionAuth];
-    if (!clientId) {
-      socket.emit("error","Internal Server Error: clientId is not found in room."); return;
-    }
+    const clientId = validateClient(socket,room);
+    if (!clientId || !room) { return; }
     
     clientLeaveRoom(room,clientId);
     broadcastRoomClientStates(room);
@@ -213,22 +246,16 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
 
 
   socket.on("changeName", ({ newName, code }: { newName: string, code: string }) => {
-    const room = rooms[code];
-    if (!room) {
-      socket.emit("error", "Code not associated with room");
-      return;
-    }
-  
     if (!isValidName(socket, newName)) return;
 
-    const clientId = room.server.authToId[socket.data.sessionAuth];
-    if (!clientId) { 
-      socket.emit("error","Internal Server Error: clientId is not found in room."); return;
-    }
+    const room = rooms[code];
+    const clientId = validateClient(socket,room);
+    if (!clientId || !room) { return; }
+
     const player = room.server.players.find((p) => p.id === clientId);
 
     if (!player) {
-      socket.emit("error","Client does not exist in this room")
+      socket.emit("error","Client is not a player in this room. (Maybe they left?)")
       return;
     } 
 
@@ -241,24 +268,22 @@ export function roomSocketInit (socket: Socket<DefaultEventsMap, DefaultEventsMa
 
   socket.on("changePlayerCount", ({ count, code }: { count: number, code: string}) => {
     const room = rooms[code];
-    if (!room) {
-      socket.emit("error", "Code not associated with room");
-      return;
-    }
-
-    const clientId = room.server.authToId[socket.data.sessionAuth];
-    if (!clientId) {
-      socket.emit("error", "Internal Server Error: clientId is not found in room."); return;
-    }
-    
-    if (clientId != room.server.hostId) {
-      socket.emit("error", `You are not the host of ${code}`);
-    }
+    const clientId = validateHost(socket,room);
+    if (!clientId || !room) { return; }
 
     if (!isValidPlayerCount(socket,count)) return;
     if (room.server.settings.numberOfPlayers === count) return;
 
     updatePlayerCountInRoom(room,count);
+    broadcastRoomClientStates(room);
+  });
+
+  socket.on("changeDeck", ({ deck, code }: { deck: Deck, code: string }) => {
+    const room = rooms[code];
+    const clientId = validateHost(socket,room);
+    if (!clientId || !room) { return; }
+    
+    updateDeckInRoom(room, deck);
     broadcastRoomClientStates(room);
   });
 }
