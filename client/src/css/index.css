@@ -10,6 +10,8 @@
 
 /* Consistent phone-frame container */
 .phone-wrapper {
+  /* Use dynamic viewport units for consistent height on mobile */
+  height: 100dvh;
   height: 100vh;
   width: clamp(30vh, 100vw, 100vh);
   margin: 0 auto;
@@ -30,7 +32,7 @@
   color: white;
   background-color: rgb(80, 80, 80);
   font-size: 1.2rem;
-  font-family: 'Inter', 'Della Respira', sans-serif;
+  font-family: 'Inter', 'Della Respira', sans-serif; 
 }
 /* Prevent page scrolling; allow only fixed elements to scroll */
 html, body {

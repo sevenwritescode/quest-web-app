@@ -6,7 +6,7 @@
   "scripts": {
     "server:dev": "nodemon --watch src --ext ts --exec \"node --loader ts-node/esm ./src/index.ts\"",
     "client:build:watch": "npm --prefix ../client run build:watch",
-    "dev": "concurrently -k \"npm run client:build:watch\" \"npm run server:dev\"",
+    "dev": "concurrently -k \"npm run server:dev\"",
     "build": "tsc -p tsconfig.json",
     "start": "node --enable-source-maps dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"

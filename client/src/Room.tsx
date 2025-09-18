@@ -32,7 +32,7 @@ export default function Room(props: RoomProps) {
     const showDeckEditor = modalStack.includes('deckEditor');
     const [deckEditorMode, setDeckEditorMode] = useState<'canonical' | 'json'>('canonical');
     const deckKeys = Object.keys(canonicalDecks) as Array<keyof typeof canonicalDecks>;
-    const [selectedDeckKey, setSelectedDeckKey] = useState<keyof typeof canonicalDecks>(deckKeys[0]);
+    const [selectedDeckKey, setSelectedDeckKey] = useState<keyof typeof canonicalDecks>("DirectorsCut7Player");
     const [customDeckJson, setCustomDeckJson] = useState('');
     const [jsonError, setJsonError] = useState<string | null>(null);
     const [settingsTab, setSettingsTab] = useState<'client' | 'game'>('client');
