@@ -91,7 +91,7 @@ function clientBecomeSpectator(room: Room, clientId: string) {
     if (!playerOnClient) { throw new Error(`Player with id ${clientId} not found in room.`); }
     playerOnClient.Role = "Spectator";
   }
-  io.to(room.server.code).emit("logMessage", `${playerOnServer.name} is now a spectator.`);
+  io.to(room.server.code).emit("logMessage", {mes:`${playerOnServer.name ?? "Anonymous"} is now a spectator.`, color: "gray"});
 }
 
 function removePlayerFromRoom(room: Room, clientId: string) {

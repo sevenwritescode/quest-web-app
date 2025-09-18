@@ -304,6 +304,6 @@ function RoomScreen() {
       onKickPlayer={doKickPlayer}
       onToggleSpectator={doToggleSpectator}
       onReorderPlayers={doReorderPlayers}
-      />
+    />
   </>
 }

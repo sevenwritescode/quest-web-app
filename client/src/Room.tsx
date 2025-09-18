@@ -130,10 +130,10 @@ export default function Room(props: RoomProps) {
         if (source.index === destination.index) return;
         const players = Array.from(props.payload.players);
         const [moved] = players.splice(source.index, 1);
-    players.splice(destination.index, 0, moved);
-    // Optimistically update local UI before server confirmation
-    props.doPayloadChange({ players });
-    props.onReorderPlayers(players.map(p => p.id));
+        players.splice(destination.index, 0, moved);
+        // Optimistically update local UI before server confirmation
+        props.doPayloadChange({ players });
+        props.onReorderPlayers(players.map(p => p.id));
     };
 
     // State and effect for log-notice banner
