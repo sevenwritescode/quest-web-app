@@ -1,7 +1,7 @@
 import type { Deck } from "../../types"
 
 
-export const p4b: Deck = {
+export const Base4Player: Deck = {
     items: [
         "Loyal Servant of Arthur",
         "Loyal Servant of Arthur",
@@ -10,7 +10,7 @@ export const p4b: Deck = {
     ]
 } as const;
 
-export const p5b: Deck = {
+export const Base5Player: Deck = {
     items: [
         "Loyal Servant of Arthur",
         "Loyal Servant of Arthur",
@@ -20,7 +20,7 @@ export const p5b: Deck = {
     ]
 } as const;
 
-export const p6b: Deck = {
+export const Base6Player: Deck = {
     items: [
         "Cleric",
         "Duke",
@@ -31,7 +31,7 @@ export const p6b: Deck = {
     ]
 } as const;
 
-export const p7b: Deck = {
+export const Base7Player: Deck = {
     items: [
         "Cleric",
         "Duke",
@@ -44,7 +44,7 @@ export const p7b: Deck = {
 } as const;
 
 
-export const p8b: Deck = {
+export const Base8Player: Deck = {
     items: [
         "Loyal Servant of Arthur",
         "Cleric",
@@ -58,7 +58,7 @@ export const p8b: Deck = {
 } as const;
 
 
-export const p9b: Deck = {
+export const Base9Player: Deck = {
     items: [
         "Loyal Servant of Arthur",
         "Cleric",
@@ -72,7 +72,7 @@ export const p9b: Deck = {
     ]
 } as const;
 
-export const p10b: Deck = {
+export const Base10Player: Deck = {
     items: [
         "Loyal Servant of Arthur",
         "Cleric",

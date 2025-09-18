@@ -247,7 +247,7 @@ function RoomScreen() {
     sock.emit("changePlayerCount", { count, code });
   }
 
-  const doDeckChange = (deck: Deck) => {
+  const doDeckChange = (_deck: Deck) => {
 
   }
   

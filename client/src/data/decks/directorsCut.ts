@@ -1,7 +1,7 @@
 import type { Deck } from "../../types"
 
 
-export const p4dc: Deck = {
+export const DirectorsCut4Player: Deck = {
     items: [
         {
             draw: 2,
@@ -16,7 +16,7 @@ export const p4dc: Deck = {
     ]
 } as const;
 
-export const p5dc: Deck = {
+export const DirectorsCut5Player: Deck = {
     items: [
         {
             draw: 2,
@@ -32,7 +32,7 @@ export const p5dc: Deck = {
     ]
 } as const;
 
-export const p6dc: Deck = {
+export const DirectorsCut6Player: Deck = {
     items: [
         "Cleric",
         {
@@ -49,7 +49,7 @@ export const p6dc: Deck = {
     ]
 } as const;
 
-export const p7dc: Deck = {
+export const DirectorsCut7Player: Deck = {
     items: [
         "Cleric",
         {
@@ -67,7 +67,7 @@ export const p7dc: Deck = {
     ]
 } as const;
 
-export const p8dc: Deck = {
+export const DirectorsCut8Player: Deck = {
     items: [
         "Loyal Servant of Arthur",
         "Cleric",
@@ -86,7 +86,7 @@ export const p8dc: Deck = {
     ]
 } as const;
 
-export const p9dc: Deck = {
+export const DirectorsCut9Player: Deck = {
     items: [
         "Loyal Servant of Arthur",
         "Cleric",
@@ -106,7 +106,7 @@ export const p9dc: Deck = {
     ]
 } as const;
 
-export const p10dc: Deck = {
+export const DirectorsCut10Player: Deck = {
     items: [
         "Loyal Servant of Arthur",
         "Cleric",
