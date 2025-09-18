@@ -44,14 +44,14 @@ export default function Room(props: RoomProps) {
         props.payload.settings.deck.items.map((item, idx) => {
             if (typeof item === "string") {
                 const role = item;
-                const src = new URL(`./assets/roles/${role}.png`, import.meta.url).href;
+                const src = new URL(`./assets/roles/${role}.webp`, import.meta.url).href;
                 return <img key={idx} src={src} alt={role} className="deck-card" loading="lazy" />;
             } else {
                 const pool = item as RolePool;
                 return (
                     <div key={idx} className="role-pool">
                         {pool.roles.map((role, i) => {
-                            const src = new URL(`./assets/roles/${role}.png`, import.meta.url).href;
+                            const src = new URL(`./assets/roles/${role}.webp`, import.meta.url).href;
                             return <img key={i} src={src} alt={role} className="deck-card pool-role" loading="lazy" />;
                         })}
                         <div className="role-pool-badge">⊃{pool.draw}</div>
