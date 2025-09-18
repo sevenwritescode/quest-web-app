@@ -267,7 +267,8 @@
     width: 2.5rem;
     margin: 0;
     top: 1rem;
-    left: calc(1rem + 2.5rem + 1rem + 2.5rem + 0.5rem)
+    left: calc(1rem + 2.5rem + 1rem + 2.5rem + 0.70rem);
+    z-index: 1000;
 }
 
 .log-button img {
@@ -452,6 +453,9 @@
     gap: 0.4em;
     overflow-y: auto;
     padding-top: 5rem; /* offset for header buttons */
+    /* Fade out at top when scrolling */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 5%, black 10%, black 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, transparent 5%, black 10%, black 100%);
 }
 .player-list::-webkit-scrollbar {
     width: 8px;
@@ -523,6 +527,8 @@
 .you-badge {
     text-align: right;
 }
+
+
 
 /* Log notice banner styles */
 .log-notice-banner {

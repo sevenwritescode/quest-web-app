@@ -116,14 +116,18 @@ function RoomScreen() {
   //   setPayload({
   //     log: testLog,
   //     players: 
-  //     [],
-  //     // Array.from({ length: 10 }, (_, i) => ({
-  //     //   id: `player${i + 1}`,
-  //     //   name: `Test Player ${i + 1}`,
-  //     //   Role: "Spectator",
-  //     //   roleKnown: false,
-  //     //   allegianceKnown: false
-  //     // })),
+  //     // [],
+  //     Array.from({ length: 10 }, (_, i) => ({
+  //       id: `player${i + 1}`,
+  //       name: `Test Player ${i + 1}`,
+  //       Role: "Spectator",
+  //       roleKnown: false,
+  //       allegianceKnown: false
+  //     })),
+  //     settings: {
+  //       numberOfPlayers: 3,
+  //       deck: { items: [] }
+  //     },
   //     code: "POOP",
   //     clientId: "test",
   //     hostId: "test"
@@ -131,6 +135,7 @@ function RoomScreen() {
   // }, [])
 
   const doPayloadChange = (patch: Partial<RoomClientState>) =>
+    // console.log("debugging!! payloadchange does nothing")
     setPayload(p => ({ ...p, ...patch }))
 
   const sockRef = useRef<Socket|null>(null);

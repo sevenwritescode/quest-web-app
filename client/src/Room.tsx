@@ -217,7 +217,11 @@ export default function Room(props: RoomProps) {
 
         <div className="player-list">
             {props.payload.players.map((player, index) => (
-                <div className="player-container" key={player.id ?? index}>
+                <div 
+                    className="player-container" 
+                    key={player.id ?? index}
+                    onClick={() => console.log(player.name)}
+                >
                     <div className="player-item">
                         {player.name !== undefined
                             ? <div className="player-name">{player.name}</div>
