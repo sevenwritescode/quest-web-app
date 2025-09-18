@@ -12,7 +12,7 @@
 .phone-wrapper {
   /* Use dynamic viewport units for consistent height on mobile */
   height: 100dvh;
-  height: 100vh;
+  /* height: 100vh; */
   width: clamp(30vh, 100vw, 100vh);
   margin: 0 auto;
   position: relative;
