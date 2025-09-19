@@ -2,7 +2,7 @@ import type { DefaultEventsMap, Socket } from "socket.io";
 import { rooms } from "../../index.js";
 import { validateHost } from "../validators.js";
 import { broadcastRoomClientStates, reorderPlayers, startGame } from "../roomService.js";
-import { isRolePool, ROLE_DATA, type Deck, type Role } from "../../types.js";
+import { isRolePool, numberOfPlayersForDeck, ROLE_DATA, type Deck, type Role } from "../../types.js";
 import { shuffle } from "../../utils.js";
 import { randomBytes } from "crypto";
 import { DEFAULT_SECRET_PROVIDER, SECRET_PROVIDERS } from "../roleSecrets.js";
