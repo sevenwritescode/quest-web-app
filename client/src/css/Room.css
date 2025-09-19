@@ -1,3 +1,40 @@
+.only-button.green {
+    background: #16a34a;
+}
+/* Confirm Stop Game Modal Styles */
+.confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5000;
+}
+.confirm-modal {
+    background: #2d2d2d;
+    color: #fff;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    max-width: 400px;
+    width: 80%;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.confirm-text {
+    font-size: 1rem;
+    text-align: center;
+}
+.confirm-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
 .error-banner {
   position: fixed;
   top: 1rem;                    /* tailwind top-4 */
@@ -272,6 +309,9 @@
 }
 .only-button.gray {
     background: #5d5d5d; 
+}
+.only-button.green {
+    background: #16a34a;
 }
 .error-visible {
   opacity: 1;

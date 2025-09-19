@@ -20,7 +20,9 @@ interface RoomProps {
     onDeckChange: (deck: Deck) => void,
     onKickPlayer: (playerId: string) => void,
     onToggleSpectator: (playerId: string) => void,
-    onReorderPlayers: (newOrder: string[]) => void
+    onReorderPlayers: (newOrder: string[]) => void,
+    onStartGame: () => void,
+    onStopGame: () => void
 }
 
 export default function Room(props: RoomProps) {
@@ -34,8 +36,12 @@ export default function Room(props: RoomProps) {
     // Derived flags
     const showSettingsModal = modalStack.includes('settings');
     const showDeckEditor = modalStack.includes('deckEditor');
+    const showConfirmStop = modalStack.includes('confirmStop');
     const [deckEditorMode, setDeckEditorMode] = useState<'canonical' | 'json'>('canonical');
     const deckKeys = Object.keys(canonicalDecks) as Array<keyof typeof canonicalDecks>;
+    
+    // Confirm Stop Game Modal
+    
     const [selectedDeckKey, setSelectedDeckKey] = useState<keyof typeof canonicalDecks>("DirectorsCut7Player");
     const [customDeckJson, setCustomDeckJson] = useState('');
     const [jsonError, setJsonError] = useState<string | null>(null);
@@ -43,6 +49,9 @@ export default function Room(props: RoomProps) {
     const [errorVisible, setErrorVisible] = useState(false);
     const logRef = useRef<HTMLDivElement>(null);
     const isHost = props.payload.clientId === props.payload.hostId;
+    const gameStarted = props.payload.gameInProgress;
+    // Spectators retain client settings even during game
+    const isSpectator = props.payload.players.find(p => p.id === props.payload.clientId)?.role === 'Spectator';
     // Helper to render deck preview
     const renderDeckPreview = () => (
         props.payload.settings.deck.items.map((item, idx) => {
@@ -241,8 +250,8 @@ export default function Room(props: RoomProps) {
                             : <div className="anonymous">Anonymous</div>
                         }
                         <div className={"role-name "
-                            + (player.Role === "Spectator" ? "Spectator" : "")}>
-                            {player.Role}
+                            + (player.role)}>
+                            {player.role === "Spectator" ? "Spectator" : ""}
                         </div>
                         <div className="player-badges">
                             {player.id === props.payload.clientId &&
@@ -274,59 +283,65 @@ export default function Room(props: RoomProps) {
                     </div>
                     <div className="settings-content">
                         {settingsTab === 'client' && (
-                            <div className="settings-section">
+                            <div className={`settings-section${(!isSpectator && gameStarted) ? ' disabled-section' : ''}`}>
                                 <div className="settings-row">
                                     <span className="settings-label">Username</span>
-                                    <input
-                                        className="settings-input"
-                                        type="text"
-                                        value={newName}
-                                        onChange={e => setNewName(e.target.value)}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter') {
-                                                props.onChangeName(e.currentTarget.value);
-                                            }
-                                        }}
-                                    />
+                                        <input
+                                            className="settings-input"
+                                            type="text"
+                                            value={newName}
+                                            disabled={!isSpectator && gameStarted}
+                                            onChange={e => setNewName(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter' && (isSpectator || !gameStarted)) {
+                                                    props.onChangeName(e.currentTarget.value);
+                                                }
+                                            }}
+                                        />
                                 </div>
                                 <div className="settings-row button-only-row">
                                     <button
                                         className="only-button gray"
+                                        disabled={!isSpectator && gameStarted}
                                         onClick={props.onBecomeSpectator}
                                     >Become Spectator</button>
                                 </div>
                                 <div className="settings-row button-only-row">
                                     <button
                                         className="only-button red"
+                                        disabled={!isSpectator && gameStarted}
                                         onClick={props.onLeaveClick}
                                     >Leave Room</button>
                                 </div>
                             </div>
                         )}
                         {settingsTab === 'game' && (
-                            <div className={
-                                `settings-section${!isHost ? ' disabled-section' : ''}`
-                            }>
-                                {/* <div className="settings-row">
-                                    <span className="settings-label">Round Time</span>
-                                    <input
-                                        className="settings-input"
-                                        type="range"
-                                        min={30}
-                                        max={300}
-                                        defaultValue={60}
-                                        disabled={!isHost}
-                                    />
-                                </div> */}
-                                {/* Deck preview */}
+                            <div className={`settings-section${(!isHost || gameStarted) ? ' disabled-section' : ''}`}> 
+
+                                {/* Start/Stop Game Button */}
+                                <div className="settings-row button-only-row">
+                                    {!props.payload.gameInProgress ? (
+                                        <button
+                                            className="only-button green"
+                                            disabled={!isHost || gameStarted}
+                                            onClick={props.onStartGame}
+                                        >Start Game</button>
+                                    ) : (
+                                        <button
+                                            className="only-button red"
+                                            disabled={!isHost}
+                                            onClick={() => pushModal('confirmStop')}
+                                        >Stop Game</button>
+                                    )}
+                                </div>
                                 <div className="settings-row">
                                     <span className="settings-label">Director's Cut</span>
                                     <input
-                                        className="settings-input"
-                                        type="checkbox"
-                                        disabled={true}
-                                        title="Director's Cut Rules are determined by deck selection."
-                                        checked={props.payload.settings.deck.directorsCut} 
+                                            className="settings-input"
+                                            type="checkbox"
+                                            disabled={true}
+                                            title="Director's Cut Rules are determined by deck selection."
+                                            checked={props.payload.settings.deck.directorsCut} 
                                     />
                                 </div>
 
@@ -340,12 +355,12 @@ export default function Room(props: RoomProps) {
                                 </div>
                                 <div className="settings-row button-only-row">
                                     <button
-                                        className="settings-action-button only-button"
-                                        disabled={!isHost}
-                                        onClick={() => pushModal('deckEditor')}
-                                    >
-                                        Edit Deck
-                                    </button>
+                                            className="settings-action-button only-button"
+                                            disabled={!isHost || gameStarted}
+                                            onClick={() => pushModal('deckEditor')}
+                                        >
+                                            Edit Deck
+                                        </button>
                                 </div>
                                 {/* Player Manager */}
                                 <DragDropContext onDragEnd={onDragEnd}>
@@ -359,10 +374,10 @@ export default function Room(props: RoomProps) {
                                                 <div className="settings-label">Player Manager</div>
                                                 {props.payload.players.map((player, idx) => (
                                                     <Draggable
-                                                        key={player.id}
-                                                        draggableId={player.id}
-                                                        index={idx}
-                                                        isDragDisabled={!isHost}
+                                                                        key={player.id}
+                                                                        draggableId={player.id}
+                                                                        index={idx}
+                                                                        isDragDisabled={!isHost || gameStarted}
                                                     >
                                                         {(prov: DraggableProvided) => (
                                                             <div
@@ -378,12 +393,12 @@ export default function Room(props: RoomProps) {
                                                                 }
                                                                 <button
                                                                     className="spectator-button"
-                                                                    disabled={!isHost}
+                                                                    disabled={!isHost || gameStarted}
                                                                     onClick={() => props.onToggleSpectator(player.id)}
-                                                                >{player.Role === 'Spectator' ? 'Un-spectate' : 'Spectate'}</button>
+                                                                >{player.role === 'Spectator' ? 'Un-spectate' : 'Spectate'}</button>
                                                                 <button
                                                                     className={`kick-button${player.id === props.payload.hostId ? ' hidden' : ''}`}
-                                                                    disabled={!isHost || player.id === props.payload.hostId}
+                                                                    disabled={!isHost || player.id === props.payload.hostId || gameStarted}
                                                                     onClick={() => props.onKickPlayer(player.id)}
                                                                 >Kick</button>
                                                             </div>
@@ -469,6 +484,17 @@ export default function Room(props: RoomProps) {
                                 }
                             }}
                         >Save</button>
+                    </div>
+                </div>
+            </div>
+        )}
+        {showConfirmStop && (
+            <div className="confirm-overlay" onClick={() => popModal()}>
+                <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+                    <div className="confirm-text">Are you sure you want to stop the game?</div>
+                    <div className="confirm-buttons">
+                        <button className="only-button gray" onClick={() => popModal()}>Cancel</button>
+                        <button className="only-button red" onClick={() => { props.onStopGame(); popModal(); }}>Stop Game</button>
                     </div>
                 </div>
             </div>

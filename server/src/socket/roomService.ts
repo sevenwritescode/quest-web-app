@@ -6,17 +6,17 @@ import type { Room, Deck } from "../types.ts";
  */
 export function clientBecomeSpectator(room: Room, clientId: string) {
   const playerOnServer = room.server.players.find((p) => p.id === clientId);
-  if (!playerOnServer || playerOnServer.Role === "Spectator") {
+  if (!playerOnServer || playerOnServer.role === "Spectator") {
     return;
   }
-  playerOnServer.Role = "Spectator";
+  playerOnServer.role = "Spectator";
 
   for (const client of room.clients) {
     const playerOnClient = client.players.find((p) => p.id === clientId);
     if (!playerOnClient) {
       throw new Error(`Player with id ${clientId} not found in room.`);
     }
-    playerOnClient.Role = "Spectator";
+    playerOnClient.role = "Spectator";
   }
 
   io.to(room.server.code).emit("logMessage", { mes: `${playerOnServer.name ?? "Anonymous"} is now a spectator.`, color: "gray" });
@@ -59,17 +59,17 @@ export function togglePlayerSpectator(room: Room, playerId: string) {
   if (!playerOnServer) {
     throw new Error("Player with this playerId not in room.");
   }
-  playerOnServer.Role = playerOnServer.Role === "Spectator" ? "No Role" : "Spectator";
+  playerOnServer.role = playerOnServer.role === "Spectator" ? "No Role" : "Spectator";
 
   for (const client of room.clients) {
     const playerOnClient = client.players.find((p) => p.id === playerId);
     if (!playerOnClient) {
       throw new Error("Player with this playerId is not found in at least one client.");
     }
-    playerOnClient.Role = playerOnServer.Role;
+    playerOnClient.role = playerOnServer.role;
   }
 
-  const mes = playerOnServer.Role === "Spectator"
+  const mes = playerOnServer.role === "Spectator"
     ? `${playerOnServer.name ?? "Anonymous"} is now a spectator.`
     : `${playerOnServer.name ?? "Anonymous"} is no longer a spectator.`;
 
@@ -134,6 +134,11 @@ export function updateDeckInRoom(room: Room, deck: Deck) {
   io.to(room.server.code).emit("logMessage", { mes: `Host updated Deck.` });
 }
 
+export function stopGame(room: Room) {
+  
+}
+
+
 /**
  * Add a brand new client to server and existing client states.
  */
@@ -142,6 +147,8 @@ export function addNewClient(room: Room, clientId: string, name?: string) {
     clientId,
     hostId: room.server.hostId,
     code: room.server.code,
+    firstLeaderId: room.server.firstLeaderId,
+    gameInProgress: room.server.gameInProgress,
     players: room.server.players.map((player) => ({ ...player })),
     settings: {
       deck: JSON.parse(JSON.stringify(room.server.settings.deck)),
@@ -151,21 +158,21 @@ export function addNewClient(room: Room, clientId: string, name?: string) {
   room.server.players.push({
     id: clientId,
     name,
-    Role: "Spectator",
-    roleKnown: true,
-    allegianceKnown: true,
+    role: room.server.gameInProgress ? "Spectator" : "No Role",
+    allegiance: "No Allegiance"
   });
 
   for (const clientState of room.clients) {
     clientState.players.push({
       id: clientId,
       name,
-      Role: "Spectator",
-      roleKnown: true,
-      allegianceKnown: true,
+      role: room.server.gameInProgress ? "Spectator" : "No Role",
+      allegiance: "No Allegiance"
     });
   }
 }
+
+
 
 /**
  * Push current room state to all connected clients.

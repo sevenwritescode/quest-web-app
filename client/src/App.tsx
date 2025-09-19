@@ -97,7 +97,9 @@ function RoomScreen() {
       code, 
       players: [],
        hostId: "",
-       clientId: "", 
+       clientId: "",
+       firstLeaderId: undefined,
+       gameInProgress: false,
        settings: { 
         deck: canonicalDecks.DirectorsCut7Player
       },
@@ -289,6 +291,24 @@ function RoomScreen() {
     }
     sock.emit("reorderPlayers", { playerIds, code }); 
   }
+
+  const doStartGame = () => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    sock.emit("startGame", { code }); 
+  }
+
+  const doStopGame = () => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    sock.emit("stopGame", { code }); 
+  }
   
   if (isLoading) {
     return <div className="loading">Connecting to room...</div>;
@@ -305,6 +325,8 @@ function RoomScreen() {
       onKickPlayer={doKickPlayer}
       onToggleSpectator={doToggleSpectator}
       onReorderPlayers={doReorderPlayers}
+      onStartGame={doStartGame}
+      onStopGame={doStopGame}
     />
   </>
 }

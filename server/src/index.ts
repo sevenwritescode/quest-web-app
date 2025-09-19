@@ -18,6 +18,8 @@ import { setupKickPlayerHandler } from "./socket/handlers/kickPlayer.js";
 import { setupToggleSpectatorHandler } from "./socket/handlers/toggleSpectator.js";
 import { setupReorderPlayersHandler } from "./socket/handlers/reorderPlayers.js";
 import { canonicalDecks } from "./data/decks/index.js";
+import { setupStartGameHandler } from "./socket/handlers/startGame.js";
+import { setupStopGameHandler } from "./socket/handlers/stopGame.js";
 
 // Server initialization
 console.log("Starting server...");
@@ -64,7 +66,7 @@ app.post("/api/create-room", (req, res) => {
   if (req.body.name === "Seven") {
     roomCode = "BUNE";
     const room = rooms[roomCode];
-    // Seven is always the host of BUNE
+    // Seven is always the host of BUNE 
     if (room) { room.server.hostId = hostId; }
   }
   rooms[roomCode] = {
@@ -72,8 +74,9 @@ app.post("/api/create-room", (req, res) => {
       code: roomCode,
       players: [  ],
       hostId,
+      firstLeaderId: undefined,
+      gameInProgress: false,
       settings: {
-        numberOfPlayers: 7,
         deck: canonicalDecks.DirectorsCut7Player
       },
       authToId: { [sessionAuth]: hostId } 
@@ -126,6 +129,8 @@ io.on("connection", (socket) => {
   setupKickPlayerHandler(socket);
   setupToggleSpectatorHandler(socket);
   setupReorderPlayersHandler(socket);
+  setupStartGameHandler(socket);
+  setupStopGameHandler(socket);
 });
 
 const clientDistPath = path.join(__dirname, "../../client/dist");

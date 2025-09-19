@@ -1,7 +1,7 @@
 import type { DefaultEventsMap, Socket } from "socket.io";
 import type { Room, RoomServerState } from "../types.ts";
 
-function validateClient(
+export function validateClient(
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
   room: Room | undefined
 ): string {
@@ -17,7 +17,7 @@ function validateClient(
   return clientId;
 }
 
-function validateHost(
+export function validateHost(
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
   room: Room | undefined
 ): string {
@@ -35,7 +35,7 @@ function validateHost(
 /**
  * Validate player display name. Emits error on socket if invalid.
  */
-function isValidName(
+export function isValidName(
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
   newName?: string
 ): boolean {
@@ -54,7 +54,7 @@ function isValidName(
 /**
  * Check for name collisions in existing room players. Emits error on socket if collision.
  */
-function existsNameCollision(
+export function existsNameCollision(
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
   newName: string | undefined,
   room: RoomServerState,
@@ -71,7 +71,4 @@ function existsNameCollision(
   }
   return false;
 }
-
-
-
-export { validateClient, validateHost, isValidName, existsNameCollision };
+ 
