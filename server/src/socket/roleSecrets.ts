@@ -36,7 +36,7 @@ const seeAllVisibleEvil: SecretProvider = (room, you) => {
       o[id] = { allegiance: room.players.find((p: Player) => p.id === id)!.allegiance };
       return o;
     },
-    {initInfo}
+    initInfo
   );
 }
 
@@ -61,11 +61,12 @@ export const SECRET_PROVIDERS: Partial<Record<Role, SecretProvider>> = {
   "Cleric": (room, you) => {
     // Reveal one Evil player's allegiance to the Cleric
     const firstLeader = room.players.find(p => p.id !== you.id && p.id === room.firstLeaderId);
-    let seenAllegiance = firstLeader!.allegiance;
-    if (firstLeader!.role === "Troublemaker") {
+    if (!firstLeader) { return {}; }
+    let seenAllegiance = firstLeader.allegiance;
+    if (firstLeader.role === "Troublemaker") {
       seenAllegiance = "Evil";
     }
-    return { [firstLeader!.id]: { allegiance: firstLeader!.allegiance } }
+    return { [firstLeader.id]: { allegiance: firstLeader.allegiance } }
   },
   "Arthur": (room, you) => {
     const morgan = room.players.find(p => p.id !== you.id && p.role === "Morgan Le Fay");

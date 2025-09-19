@@ -1,5 +1,8 @@
+import { randomBytes } from "crypto";
 import { io } from "../index.js";
-import type { Room, Deck } from "../types.ts";
+import { type Room, type Deck, type Role, isRolePool, ROLE_DATA } from "../types.js";
+import { shuffle } from "../utils.js";
+import { DEFAULT_SECRET_PROVIDER, SECRET_PROVIDERS } from "./roleSecrets.js";
 
 /**
  * Promote a client to spectator.
@@ -134,8 +137,109 @@ export function updateDeckInRoom(room: Room, deck: Deck) {
   io.to(room.server.code).emit("logMessage", { mes: `Host updated Deck.` });
 }
 
+export function startGame(room: Room) {
+  console.log("Before Start: ")
+  console.dir(room, { depth: null, colors: true });
+  console.log("\n");
+
+  // Distribute Roles on Server Side
+  const roles = shuffleDeck(room.server.settings.deck);
+  roles.forEach((role, i) => {
+    const player = room.server.players[i];
+    if (!player) {
+      throw new Error(`Player at index ${i} is undefined`);
+    }
+    player.role = role;
+    player.allegiance = ROLE_DATA[role].allegiance;
+  });
+
+  console.log("After Role Distribution: ")
+  console.dir(room, { depth: null, colors: true });
+  console.log("\n");
+
+  // randomly select a first leader
+  const playerIds = room.server.players.map(p => p.id);
+  const rand = randomBytes(4).readUInt32BE(0);
+  const firstLeaderId = playerIds[rand % playerIds.length];
+  room.server.firstLeaderId = firstLeaderId;
+  for (const client of room.clients) {
+    client.firstLeaderId = firstLeaderId;
+  }
+
+  console.log("After Random Leader Selection: ")
+  console.dir(room, { depth: null, colors: true });
+  console.log("\n");
+
+  // Inform Clients of Their Own Role and Secret Info
+  for (const client of room.clients) {
+    // 1) start with a fresh “unknown” view:
+    client.gameInProgress = true;
+    client.players = room.server.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      role: "Unknown" as const,
+      allegiance: "Unknown" as const,
+    }));
+
+    console.dir(client.players, { depth: null, colors: null });
+
+    // 1a) learn of own role
+    const clientPlayer = client.players.find(p => p.id === client.clientId);
+    const serverPlayer = room.server.players.find((p) => p.id === client.clientId);
+    clientPlayer!.role = serverPlayer!.role;
+    clientPlayer!.allegiance = serverPlayer!.allegiance;
+
+    // 2) pick your own provider
+    const me = room.server.players.find(p => p.id === client.clientId)!;
+    const fn = SECRET_PROVIDERS[me.role] ?? DEFAULT_SECRET_PROVIDER;
+
+    // 3) apply only the overrides this role gets
+    const overrides = fn(room.server, me);
+    console.log(`My Role: ${me.role}`);
+    console.log("My overrides:")
+    console.log(overrides);
+    for (const [id, { role, allegiance }] of Object.entries(overrides)) {
+      console.log(`id: ${id}`);
+      console.log(`role: ${role}`);
+      console.log(`allegiance: ${allegiance}`);
+      const view = client.players.find(v => v.id === id)!;
+      console.log(`view ${view}`);
+      if (role) view.role = role;
+      if (allegiance) view.allegiance = allegiance;
+    }
+  }
+
+  io.to(room.server.code).emit("logMessage", { 
+    mes: "Game Start! View Secret Info in the Knowledge Tab",
+    color: "green"
+  });
+}
+
+function shuffleDeck(deck: Deck): Role[] {
+  const returnVal: Role[] = [];
+  for (const di of deck.items) {
+    if (isRolePool(di)) {
+      const shuffledPool = shuffle(di.roles);
+      for (let i = 0; i < di.draw; i++) {
+        if (shuffledPool.length == 0) {
+          throw new Error("Invalid Deck: Draw value is invalid for this pool.")
+        }
+        returnVal.push(shuffledPool.pop()!);
+      }
+    }
+    else {
+      returnVal.push(di);
+    }
+  }
+
+  return shuffle(returnVal);
+}
+
+
+
+
 export function stopGame(room: Room) {
-  
+
 }
 
 

@@ -1,5 +1,5 @@
 import type { RoomClientState, Deck, RolePool } from './types';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult, DroppableProvided, DraggableProvided } from '@hello-pangea/dnd';
 import "./css/index.css";
@@ -132,6 +132,27 @@ export default function Room(props: RoomProps) {
         }
     }, [props.payload.log, displayLog]);
 
+    // Compute known roles or allegiances for knowledge modal
+    const knowledgeEntries = useMemo(() => {
+        type Entry = { id: string; name?: string; label: string; img: string; isSelf: boolean };
+        const list = props.payload.players
+            .map(p => {
+                const { id, name, role, allegiance } = p;
+                const showRole = role !== 'Unknown' && role !== 'No Role' && role !== 'Spectator';
+                const showAllegiance = !showRole && allegiance !== 'Unknown' && allegiance !== 'No Allegiance';
+                if (!showRole && !showAllegiance) return null;
+                const label = showRole ? role : allegiance;
+                const imgName = showRole ? role : allegiance;
+                const img = new URL(`./assets/${showRole ? 'roles' : 'allegiances'}/${imgName}.webp`, import.meta.url).href;
+                const isSelf = p.id === props.payload.clientId;
+                return { id, name, label, img, isSelf } as Entry;
+            })
+            .filter((e): e is Entry => e !== null);
+        // put self first
+        list.sort((a, b) => (a.isSelf === b.isSelf ? 0 : a.isSelf ? -1 : 1));
+        return list;
+    }, [props.payload.players, props.payload.clientId]);
+
     // Handler for react-beautiful-dnd drag end
     const onDragEnd = (result: DropResult) => {
         const { source, destination } = result;
@@ -221,7 +242,7 @@ export default function Room(props: RoomProps) {
         </div>
 
 
-        {displayQRCode && (
+    {displayQRCode && (
             <div className="qr-overlay" onClick={() =>  {
                 
                 setDisplayQRCode(false);
@@ -232,6 +253,28 @@ export default function Room(props: RoomProps) {
                         size={200}
                         level="L"
                     />
+                </div>
+            </div>
+        )}
+
+        {/* Knowledge Modal */}
+        {displayKnowledge && (
+            <div className="knowledge-overlay" onClick={() => setDisplayKnowledge(false)}>
+                <div className="knowledge-modal" onClick={e => e.stopPropagation()}>
+                    <button className="knowledge-close-button" onClick={() => setDisplayKnowledge(false)}>✕</button>
+                    <div className="knowledge-content">
+                        {knowledgeEntries.map(entry => (
+                            <div key={entry.id} className={`knowledge-entry${entry.isSelf ? ' self' : ''}`}>
+                                {/* Name on left, image on right */}
+                                {!entry.isSelf && (
+                                    <div className="knowledge-label">
+                                        {entry.name || 'Unknown'}
+                                    </div>
+                                )}
+                                <img src={entry.img} alt={entry.label} />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         )}
@@ -479,6 +522,7 @@ export default function Room(props: RoomProps) {
                                         setJsonError(null);
                                         popModal();
                                     } catch (e: any) {
+                                        console.log(e);
                                         setJsonError('Invalid JSON');
                                     }
                                 }
