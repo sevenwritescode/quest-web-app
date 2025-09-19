@@ -53,6 +53,7 @@ function LandingScreen() {
     try {
       const res = await fetch(`/api/create-room`, {
         method: "POST",
+        body: JSON.stringify({ name: payload.name }),
         headers: { "Content-Type": "application/json" },
         credentials: 'include'
       });

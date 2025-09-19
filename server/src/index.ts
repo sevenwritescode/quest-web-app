@@ -1,5 +1,5 @@
 import express from "express";
-import { v4 as uuid } from 'uuid';
+import { v4 as uuid } from "uuid";
 import path, { dirname } from "path";
 import cookieParser from "cookie-parser";
 import http from "http";
@@ -8,10 +8,19 @@ import { randomBytes } from "crypto"
 import cookie from "cookie";
 import { fileURLToPath } from "url";
 import type { Room } from "./types.ts";
-import { roomSocketInit } from "./socket.js";
+// Socket event handlers
+import { setupJoinHandler } from "./socket/handlers/join.js";
+import { setupBecomeSpectatorHandler } from "./socket/handlers/becomeSpectator.js";
+import { setupLeaveRequestHandler } from "./socket/handlers/leaveRequest.js";
+import { setupChangeNameHandler } from "./socket/handlers/changeName.js";
+import { setupChangeDeckHandler } from "./socket/handlers/changeDeck.js";
+import { setupKickPlayerHandler } from "./socket/handlers/kickPlayer.js";
+import { setupToggleSpectatorHandler } from "./socket/handlers/toggleSpectator.js";
+import { setupReorderPlayersHandler } from "./socket/handlers/reorderPlayers.js";
 import { canonicalDecks } from "./data/decks/index.js";
 
-console.log('starting server');
+// Server initialization
+console.log("Starting server...");
 
 const app = express();
 // Determine ports for HTTP (Express) and Socket.IO servers
@@ -50,8 +59,14 @@ function getSessionAuth(req: express.Request, res: express.Response): string {
 
 app.post("/api/create-room", (req, res) => {
   const sessionAuth = getSessionAuth(req, res);
-  const roomCode = generateRoomCode();
+  let roomCode = generateRoomCode();
   const hostId = uuid();
+  if (req.body.name === "Seven") {
+    roomCode = "BUNE";
+    const room = rooms[roomCode];
+    // Seven is always the host of BUNE
+    if (room) { room.server.hostId = hostId; }
+  }
   rooms[roomCode] = {
     server: {
       code: roomCode,
@@ -100,7 +115,18 @@ io.use((socket, next) => {
   next();
 });
 
-io.on("connection", roomSocketInit);
+// WebSocket connection
+io.on("connection", (socket) => {
+  console.log(`⚡ Socket connected: ${socket.id}`);
+  setupJoinHandler(socket);
+  setupBecomeSpectatorHandler(socket);
+  setupLeaveRequestHandler(socket);
+  setupChangeNameHandler(socket);
+  setupChangeDeckHandler(socket);
+  setupKickPlayerHandler(socket);
+  setupToggleSpectatorHandler(socket);
+  setupReorderPlayersHandler(socket);
+});
 
 const clientDistPath = path.join(__dirname, "../../client/dist");
 app.use(express.static(clientDistPath)); 
