@@ -617,6 +617,13 @@
     justify-content: right;
     flex: 0 0 33%;
 }
+/* First Leader Badge Styles */
+.leader-badge {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+    margin-right: 0.5rem;
+}
 
 .host-badge, .you-badge
 { 

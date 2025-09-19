@@ -198,7 +198,7 @@ export function startGame(room: Room) {
   });
 
   // randomly select a first leader
-  const playerIds = room.server.players.map(p => p.id);
+  const playerIds = room.server.players.filter(p => p.role !== "Spectator").map(p => p.id);
   const rand = randomBytes(4).readUInt32BE(0);
   const firstLeaderId = playerIds[rand % playerIds.length];
   room.server.firstLeaderId = firstLeaderId;

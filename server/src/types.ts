@@ -53,6 +53,19 @@ export type Deck = {
   items: DeckItem[]
 }
 
+export function numberOfPlayersForDeck(deck: Deck) {
+  let count = 0;
+  for (const deckItem of deck.items) {
+    if (isRolePool(deckItem)) {
+      count += deckItem.draw;
+    }
+    else {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 
 export type RoomClientState = {
   code: string,

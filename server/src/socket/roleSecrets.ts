@@ -1,4 +1,4 @@
-import type { RoomServerState, Player, Role, Allegiance } from "../types.js";
+import { type RoomServerState, type Player, type Role, type Allegiance, numberOfPlayersForDeck } from "../types.js";
 
 export type RevealOverrides = Record<
   string,
@@ -24,7 +24,7 @@ const seeAllVisibleEvil: SecretProvider = (room, you) => {
     .map((p: Player) => p.id);
   let initInfo: RevealOverrides = {};
   const blindHunter = room.players.find(p => p.role === "Blind Hunter");
-  if (!room.settings.deck.directorsCut && blindHunter) {
+  if (!room.settings.deck.directorsCut && numberOfPlayersForDeck(room.settings.deck) <= 5 && blindHunter) {
     initInfo[blindHunter.id] = { allegiance: blindHunter.allegiance, role: blindHunter.role }
   }
   const scion = room.players.find(p => p.role === "Scion");
@@ -66,7 +66,7 @@ export const SECRET_PROVIDERS: Partial<Record<Role, SecretProvider>> = {
     if (firstLeader.role === "Troublemaker") {
       seenAllegiance = "Evil";
     }
-    return { [firstLeader.id]: { allegiance: firstLeader.allegiance } }
+    return { [firstLeader.id]: { allegiance: seenAllegiance } }
   },
   "Arthur": (room, you) => {
     const morgan = room.players.find(p => p.id !== you.id && p.role === "Morgan Le Fay");

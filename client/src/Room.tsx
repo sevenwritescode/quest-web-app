@@ -7,6 +7,7 @@ import "./css/Room.css";
 import gear_icon from './assets/icons/Gear_icon_svg.svg';
 import log_icon from './assets/icons/system-log-2.png';
 import knowledge_icon from './assets/icons/books-17.svg';
+import leaderImg from './assets/game_pieces/Leader.webp';
 import { canonicalDecks } from "./data/decks";
 import QRCode from "react-qr-code";
 
@@ -298,6 +299,9 @@ export default function Room(props: RoomProps) {
                             {player.role === "Spectator" ? "Spectator" : ""}
                         </div>
                         <div className="player-badges">
+                            {player.id === props.payload.firstLeaderId && (
+                                <img src={leaderImg} alt="First Leader" className="leader-badge" />
+                            )}
                             {player.id === props.payload.clientId &&
                                 <div className={"you-badge "}>
                                     (You)
