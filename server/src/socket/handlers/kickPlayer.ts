@@ -11,12 +11,12 @@ export function setupKickPlayerHandler(
     const clientId = validateHost(socket, room);
     if (!clientId || !room) return;
 
-    const player = room.server.players.find((p) => p.id === clientId);
+    const player = room.server.players.find((p) => p.id === playerId);
     if (!player) {
       socket.emit("error", "Client is not a player in this room. (Maybe they left?)");
       return;
     }
-
+ 
     if (room.server.gameInProgress && player.role !== "Spectator") {
       socket.emit("error", `You cannot kick someone who is currently playing!`);
       return;

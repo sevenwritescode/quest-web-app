@@ -13,6 +13,7 @@ export function clientBecomeSpectator(room: Room, clientId: string) {
     throw Error("Player not in server.")
   }
   playerOnServer.role = "Spectator";
+  playerOnServer.allegiance = ROLE_DATA["Spectator"].allegiance;
 
   for (const client of room.clients) {
     const playerOnClient = client.players.find((p) => p.id === clientId);
@@ -20,6 +21,7 @@ export function clientBecomeSpectator(room: Room, clientId: string) {
       throw new Error(`Player with id ${clientId} not found in room.`);
     }
     playerOnClient.role = "Spectator";
+    playerOnClient.allegiance = ROLE_DATA["Spectator"].allegiance;
   }
 
   io.to(room.server.code).emit("logMessage", { mes: `${playerOnServer.name ?? "Anonymous"} is now a spectator.`, color: "gray" });
@@ -63,6 +65,7 @@ export function togglePlayerSpectator(room: Room, playerId: string) {
     throw new Error("Player with this playerId not in room.");
   }
   playerOnServer.role = playerOnServer.role === "Spectator" ? "No Role" : "Spectator";
+  playerOnServer.allegiance = ROLE_DATA[playerOnServer.role].allegiance;
 
   for (const client of room.clients) {
     const playerOnClient = client.players.find((p) => p.id === playerId);
@@ -70,6 +73,7 @@ export function togglePlayerSpectator(room: Room, playerId: string) {
       throw new Error("Player with this playerId is not found in at least one client.");
     }
     playerOnClient.role = playerOnServer.role;
+    playerOnClient.allegiance = ROLE_DATA[playerOnServer.role].allegiance;
   }
 
   const mes = playerOnServer.role === "Spectator"
@@ -146,17 +150,23 @@ export function toggleOmnipotentSpectator(room: Room) {
   if (room.server.gameInProgress) {
     if (room.server.settings.omnipotentSpectators) {
       for (const client of room.clients) {
-        client.players = room.server.players.map((player) => ({ ...player })); 
+        const clientPlayer = client.players.find((p) => p.id == client.clientId);
+        if (clientPlayer!.role === "Spectator") { 
+          client.players = room.server.players.map((player) => ({ ...player })); 
+        }
       }
     }
     else {
       for (const client of room.clients) {
-        client.players = room.server.players.map(p => ({
-          id: p.id,
-          name: p.name,
-          role: p.role !== "Spectator" ? "Unknown" : "Spectator",
-          allegiance: p.role !== "Spectator" ? "Unknown" : "No Allegiance",
-        }));
+        const clientPlayer = client.players.find((p) => p.id == client.clientId);
+        if (clientPlayer!.role === "Spectator") { 
+          client.players = room.server.players.map(p => ({
+            id: p.id,
+            name: p.name,
+            role: p.role !== "Spectator" ? "Unknown" : "Spectator",
+            allegiance: p.role !== "Spectator" ? "Unknown" : "No Allegiance",
+          }));
+        }
       }
     }
   }
@@ -171,12 +181,18 @@ export function toggleOmnipotentSpectator(room: Room) {
 
 export function startGame(room: Room) {
   // Distribute Roles on Server Side
+  let index: number = -1;
   const roles = shuffleDeck(room.server.settings.deck);
-  roles.forEach((role, i) => {
-    const player = room.server.players[i];
-    if (!player) {
-      throw new Error(`Player at index ${i} is undefined`);
-    }
+  roles.forEach((role) => {
+    let player;
+    do {
+      index = index + 1;
+      player = room.server.players[index];
+      if (!player) {
+        throw new Error(`Player at index ${index} is undefined`);
+      } 
+    } while (player.role === "Spectator")
+    
     player.role = role;
     player.allegiance = ROLE_DATA[role].allegiance;
   });
@@ -198,7 +214,7 @@ export function startGame(room: Room) {
     const serverPlayer = room.server.players.find((p) => p.id === client.clientId);
     if (serverPlayer!.role === "Spectator" && room.server.settings.omnipotentSpectators) {
       client.players = room.server.players.map((player) => ({ ...player }));
-      break;
+      continue;
     }
 
     // 1) start with a fresh “unknown” view:
@@ -209,7 +225,7 @@ export function startGame(room: Room) {
       allegiance: p.role !== "Spectator" ? "Unknown" : "No Allegiance",
     }));
 
-    console.dir(client.players, { depth: null, colors: null });
+    
 
     // 1a) learn of own role
     const clientPlayer = client.players.find(p => p.id === client.clientId);
@@ -227,6 +243,8 @@ export function startGame(room: Room) {
       if (role) view.role = role;
       if (allegiance) view.allegiance = allegiance;
     }
+
+    console.dir(client.players, { depth: null, colors: null });
   }
 
   room.server.gameInProgress = true; 

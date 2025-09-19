@@ -343,7 +343,7 @@ export default function Room(props: RoomProps) {
                                             }}
                                         />
                                 </div>
-                                <div className={`settings-row button-only-row${(!isHost || gameStarted) ? ' disabled-row' : ''}`}>
+                                <div className={`settings-row button-only-row${(!isSpectator && gameStarted) ? ' disabled-row' : ''}`}>
                                     <button
                                         className="only-button gray"
                                         disabled={!isSpectator && gameStarted}
@@ -388,16 +388,7 @@ export default function Room(props: RoomProps) {
                                         checked={props.payload.settings.deck.directorsCut}
                                     />
                                 </div>
-                                <div className={`settings-row${(!isHost || gameStarted) ? ' disabled-row' : ''}`}>
-                                    <span className="settings-label">Omnipotent Spectators</span>
-                                    <input
-                                        className="settings-input"
-                                        type="checkbox"
-                                        disabled={!isHost}
-                                        checked={props.payload.settings.omnipotentSpectators}
-                                        onChange={() => props.onToggleOmnipotentSpectators()}
-                                    />
-                                </div>
+                                
 
                                 <div className={`settings-row${(!isHost || gameStarted) ? ' disabled-row' : ''}`}>
                                     <span className="settings-label">Deck</span>
@@ -469,7 +460,7 @@ export default function Room(props: RoomProps) {
                                     </Droppable>
                                 </DragDropContext>
                                 {/* Omnipotent Spectators below all other settings */}
-                                <div className="settings-row">
+                                <div className={`settings-row${(!isHost) ? ' disabled-row' : ''}`}>
                                     <span className="settings-label">Omnipotent Spectators</span>
                                     <input
                                         className="settings-input"
