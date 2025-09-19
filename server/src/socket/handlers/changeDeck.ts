@@ -13,6 +13,11 @@ export function setupChangeDeckHandler(
     const clientId = validateHost(socket, room);
     if (!clientId || !room) return;
 
+    if (room.server.gameInProgress) {
+      socket.emit("error", `Decks cannot be changed mid-game.`);
+      return;
+    }
+
     // Validate RolePool draw sizes
     for (const item of deck.items) {
       if (isRolePool(item) && item.draw > item.roles.length) {

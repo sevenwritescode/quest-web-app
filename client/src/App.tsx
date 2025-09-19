@@ -100,7 +100,8 @@ function RoomScreen() {
        clientId: "",
        firstLeaderId: undefined,
        gameInProgress: false,
-       settings: { 
+       settings: {
+        omnipotentSpectators: true, 
         deck: canonicalDecks.DirectorsCut7Player
       },
       log: []
@@ -292,6 +293,16 @@ function RoomScreen() {
     sock.emit("reorderPlayers", { playerIds, code }); 
   }
 
+  const doToggleOmnipotentSpectators = () => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    } 
+
+    sock.emit("toggleOmnipotentSpectators", { code });
+  }
+
   const doStartGame = () => {
     const sock = sockRef.current;
     if (!sock || sock.disconnected) {
@@ -325,6 +336,7 @@ function RoomScreen() {
       onKickPlayer={doKickPlayer}
       onToggleSpectator={doToggleSpectator}
       onReorderPlayers={doReorderPlayers}
+      onToggleOmnipotentSpectators={doToggleOmnipotentSpectators}
       onStartGame={doStartGame}
       onStopGame={doStopGame}
     />

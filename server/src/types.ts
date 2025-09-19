@@ -62,6 +62,7 @@ export type RoomClientState = {
   firstLeaderId: string | undefined,
   gameInProgress: boolean,
   settings: {
+    omnipotentSpectators: boolean
     deck: Deck,
   }
 }
@@ -105,7 +106,8 @@ export type RoomServerState = {
   firstLeaderId: string | undefined,
   gameInProgress: boolean, 
   settings: {
-    deck: Deck 
+    deck: Deck,
+    omnipotentSpectators: boolean
   }
   // server only props
   authToId: Record<string,string>

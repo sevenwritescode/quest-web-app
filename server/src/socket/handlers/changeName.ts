@@ -20,6 +20,11 @@ export function setupChangeNameHandler(
       return;
     }
 
+    if (room.server.gameInProgress && player.role !== "Spectator") {
+      socket.emit("error", `Game in progress! Wouldn't want to confuse people now would we?`);
+      return;
+    }
+
     if (existsNameCollision(socket, newName, room.server, clientId)) return;
     if (player.name === newName) return;
 

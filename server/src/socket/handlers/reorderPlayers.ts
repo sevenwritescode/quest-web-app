@@ -11,6 +11,11 @@ export function setupReorderPlayersHandler(
     const clientId = validateHost(socket, room);
     if (!clientId || !room) return;
 
+    if (room.server.gameInProgress) {
+      socket.emit("error", `You cannot reorder people during a game!`);
+      return;
+    }
+
     reorderPlayers(room, playerIds);
     broadcastRoomClientStates(room);
   });

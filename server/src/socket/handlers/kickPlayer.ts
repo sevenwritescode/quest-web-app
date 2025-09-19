@@ -17,6 +17,11 @@ export function setupKickPlayerHandler(
       return;
     }
 
+    if (room.server.gameInProgress && player.role !== "Spectator") {
+      socket.emit("error", `You cannot kick someone who is currently playing!`);
+      return;
+    }
+
     kickPlayerFromRoom(room, playerId);
     broadcastRoomClientStates(room);
     io.to(playerId).emit("disconnect_request", `You were kicked from ${room.server.code}`);

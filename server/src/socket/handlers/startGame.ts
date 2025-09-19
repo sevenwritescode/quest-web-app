@@ -30,6 +30,16 @@ export function setupStartGameHandler(
         return;
     }
 
+    // ensure that everyone that is playing has a name
+    for (const player of room.server.players) {
+        if (player.name === undefined && player.role !== "Spectator") {
+            socket.emit("error",
+                `Everyone who is not a spectator must have a name.`
+            );
+            return;
+        }
+    }
+
     startGame(room);  
     broadcastRoomClientStates(room);
   });

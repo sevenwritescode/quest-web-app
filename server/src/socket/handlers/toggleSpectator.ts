@@ -13,6 +13,7 @@ export function setupToggleSpectatorHandler(
 
     if (room.server.gameInProgress) {
       socket.emit("error", "You can't become a spectator mid game silly!");
+      return;
     }
 
     togglePlayerSpectator(room, playerId);

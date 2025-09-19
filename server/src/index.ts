@@ -20,6 +20,7 @@ import { setupReorderPlayersHandler } from "./socket/handlers/reorderPlayers.js"
 import { canonicalDecks } from "./data/decks/index.js";
 import { setupStartGameHandler } from "./socket/handlers/startGame.js";
 import { setupStopGameHandler } from "./socket/handlers/stopGame.js";
+import { setupToggleOmnipotentSpectator } from "./socket/handlers/toggleOmnipotentSpectator.js";
 
 // Server initialization
 console.log("Starting server...");
@@ -77,6 +78,7 @@ app.post("/api/create-room", (req, res) => {
       firstLeaderId: undefined,
       gameInProgress: false,
       settings: {
+        omnipotentSpectators: true,
         deck: canonicalDecks.DirectorsCut7Player
       },
       authToId: { [sessionAuth]: hostId } 
@@ -129,6 +131,7 @@ io.on("connection", (socket) => {
   setupKickPlayerHandler(socket);
   setupToggleSpectatorHandler(socket);
   setupReorderPlayersHandler(socket);
+  setupToggleOmnipotentSpectator(socket);
   setupStartGameHandler(socket);
   setupStopGameHandler(socket);
 });

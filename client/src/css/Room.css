@@ -199,6 +199,11 @@
     gap: 0.5rem;
     margin-top: 1rem;
 }
+/* Disabled row styling for settings */
+.settings-row.disabled-row {
+    opacity: 0.5;
+    pointer-events: none;
+}
 .player-manager-item {
     display: flex;
     align-items: center;
@@ -270,12 +275,19 @@
 }
 .settings-input {
     flex: 1;
-    padding: 0.25rem;
+    padding: 0.5rem;
     border-radius: 0.25rem;
     border: 1px solid #555;
     background: #3d3d3d;
     color: #fff;
-    
+    font-family: monospace;
+}
+.settings-input.json {
+    /* Larger area for JSON input */
+    min-height: 200px;
+    /* Ensure full width within container */
+    /* Allow vertical resizing */
+    resize: vertical;
 }
 
 /* Labels in disabled sections should be grayed-out */

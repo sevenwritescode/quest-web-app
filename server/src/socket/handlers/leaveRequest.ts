@@ -17,6 +17,11 @@ export function setupLeaveRequestHandler(
       return;
     }
 
+    if (room.server.gameInProgress && player.role !== "Spectator") {
+      socket.emit("error", `You cannot leave a game in progress!`);
+      return;
+    }
+
     clientLeaveRoom(room, clientId);
     broadcastRoomClientStates(room);
     socket.emit("disconnect_request", `You successfully left room ${room.server.code}`);

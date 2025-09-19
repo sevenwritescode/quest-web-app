@@ -18,6 +18,7 @@ interface RoomProps {
     onBecomeSpectator: () => void,
     onLeaveClick: () => void,
     onDeckChange: (deck: Deck) => void,
+    onToggleOmnipotentSpectators: () => void,
     onKickPlayer: (playerId: string) => void,
     onToggleSpectator: (playerId: string) => void,
     onReorderPlayers: (newOrder: string[]) => void,
@@ -342,7 +343,7 @@ export default function Room(props: RoomProps) {
                                             }}
                                         />
                                 </div>
-                                <div className="settings-row button-only-row">
+                                <div className={`settings-row button-only-row${(!isHost || gameStarted) ? ' disabled-row' : ''}`}>
                                     <button
                                         className="only-button gray"
                                         disabled={!isSpectator && gameStarted}
@@ -359,10 +360,10 @@ export default function Room(props: RoomProps) {
                             </div>
                         )}
                         {settingsTab === 'game' && (
-                            <div className={`settings-section${(!isHost || gameStarted) ? ' disabled-section' : ''}`}> 
+                            <div className="settings-section"> 
 
                                 {/* Start/Stop Game Button */}
-                                <div className="settings-row button-only-row">
+                                <div className={`settings-row button-only-row${!isHost ? ' disabled-row' : ''}`}>
                                     {!props.payload.gameInProgress ? (
                                         <button
                                             className="only-button green"
@@ -377,26 +378,36 @@ export default function Room(props: RoomProps) {
                                         >Stop Game</button>
                                     )}
                                 </div>
-                                <div className="settings-row">
+                                <div className="settings-row disabled-row">
                                     <span className="settings-label">Director's Cut</span>
                                     <input
-                                            className="settings-input"
-                                            type="checkbox"
-                                            disabled={true}
-                                            title="Director's Cut Rules are determined by deck selection."
-                                            checked={props.payload.settings.deck.directorsCut} 
+                                        className="settings-input"
+                                        type="checkbox"
+                                        disabled={true}
+                                        title="Director's Cut Rules are determined by deck selection."
+                                        checked={props.payload.settings.deck.directorsCut}
+                                    />
+                                </div>
+                                <div className={`settings-row${(!isHost || gameStarted) ? ' disabled-row' : ''}`}>
+                                    <span className="settings-label">Omnipotent Spectators</span>
+                                    <input
+                                        className="settings-input"
+                                        type="checkbox"
+                                        disabled={!isHost}
+                                        checked={props.payload.settings.omnipotentSpectators}
+                                        onChange={() => props.onToggleOmnipotentSpectators()}
                                     />
                                 </div>
 
-                                <div className="settings-row">
+                                <div className={`settings-row${(!isHost || gameStarted) ? ' disabled-row' : ''}`}>
                                     <span className="settings-label">Deck</span>
                                 </div>
-                                <div className="settings-row deck-preview-row">
+                                <div className={`settings-row deck-preview-row${(!isHost || gameStarted) ? ' disabled-row' : ''}`}>
                                     <div className="deck-preview">
                                         {renderDeckPreview()}
                                     </div>
                                 </div>
-                                <div className="settings-row button-only-row">
+                                <div className={`settings-row button-only-row${(!isHost || gameStarted) ? ' disabled-row' : ''}`}>
                                     <button
                                             className="settings-action-button only-button"
                                             disabled={!isHost || gameStarted}
@@ -441,7 +452,11 @@ export default function Room(props: RoomProps) {
                                                                 >{player.role === 'Spectator' ? 'Un-spectate' : 'Spectate'}</button>
                                                                 <button
                                                                     className={`kick-button${player.id === props.payload.hostId ? ' hidden' : ''}`}
-                                                                    disabled={!isHost || player.id === props.payload.hostId || gameStarted}
+                                                                    disabled={
+                                                                        !isHost ||
+                                                                        player.id === props.payload.hostId ||
+                                                                        (gameStarted && player.role !== 'Spectator')
+                                                                    }
                                                                     onClick={() => props.onKickPlayer(player.id)}
                                                                 >Kick</button>
                                                             </div>
@@ -453,6 +468,17 @@ export default function Room(props: RoomProps) {
                                         )}
                                     </Droppable>
                                 </DragDropContext>
+                                {/* Omnipotent Spectators below all other settings */}
+                                <div className="settings-row">
+                                    <span className="settings-label">Omnipotent Spectators</span>
+                                    <input
+                                        className="settings-input"
+                                        type="checkbox"
+                                        disabled={!isHost}
+                                        checked={props.payload.settings.omnipotentSpectators}
+                                        onChange={() => props.onToggleOmnipotentSpectators()}
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>
@@ -495,8 +521,7 @@ export default function Room(props: RoomProps) {
                         {deckEditorMode === 'json' && (
                             <div className="settings-section">
                                 <textarea
-                                    className="settings-input"
-                                    style={{ height: '200px', fontFamily: 'monospace' }}
+                                    className="settings-input json"
                                     value={customDeckJson}
                                     onChange={e => setCustomDeckJson(e.target.value)}
                                 />
@@ -504,7 +529,7 @@ export default function Room(props: RoomProps) {
                             </div>
                         )}
                     </div>
-                    <div className="settings-row button-only-row" style={{ marginTop: '1rem' }}>
+                    <div className="settings-row button-only-row">
                         <button
                             className="only-button gray"
                             onClick={() => popModal()}

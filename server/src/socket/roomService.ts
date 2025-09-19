@@ -9,8 +9,8 @@ import { DEFAULT_SECRET_PROVIDER, SECRET_PROVIDERS } from "./roleSecrets.js";
  */
 export function clientBecomeSpectator(room: Room, clientId: string) {
   const playerOnServer = room.server.players.find((p) => p.id === clientId);
-  if (!playerOnServer || playerOnServer.role === "Spectator") {
-    return;
+  if (!playerOnServer) {
+    throw Error("Player not in server.")
   }
   playerOnServer.role = "Spectator";
 
@@ -137,11 +137,39 @@ export function updateDeckInRoom(room: Room, deck: Deck) {
   io.to(room.server.code).emit("logMessage", { mes: `Host updated Deck.` });
 }
 
-export function startGame(room: Room) {
-  console.log("Before Start: ")
-  console.dir(room, { depth: null, colors: true });
-  console.log("\n");
+export function toggleOmnipotentSpectator(room: Room) {
+  room.server.settings.omnipotentSpectators = !room.server.settings.omnipotentSpectators;
+  for (const clientState of room.clients) {
+    clientState.settings.omnipotentSpectators = room.server.settings.omnipotentSpectators;
+  }
 
+  if (room.server.gameInProgress) {
+    if (room.server.settings.omnipotentSpectators) {
+      for (const client of room.clients) {
+        client.players = room.server.players.map((player) => ({ ...player })); 
+      }
+    }
+    else {
+      for (const client of room.clients) {
+        client.players = room.server.players.map(p => ({
+          id: p.id,
+          name: p.name,
+          role: p.role !== "Spectator" ? "Unknown" : "Spectator",
+          allegiance: p.role !== "Spectator" ? "Unknown" : "No Allegiance",
+        }));
+      }
+    }
+  }
+
+  if (room.server.settings.omnipotentSpectators) {
+    io.to(room.server.code).emit("logMessage", { mes: `Spectators are now omnipotent`, color: "gray"})
+  }
+  else {
+    io.to(room.server.code).emit("logMessage", { mes: `Spectators are no longer omnipotent`, color: "gray" });
+  }
+}
+
+export function startGame(room: Room) {
   // Distribute Roles on Server Side
   const roles = shuffleDeck(room.server.settings.deck);
   roles.forEach((role, i) => {
@@ -153,10 +181,6 @@ export function startGame(room: Room) {
     player.allegiance = ROLE_DATA[role].allegiance;
   });
 
-  console.log("After Role Distribution: ")
-  console.dir(room, { depth: null, colors: true });
-  console.log("\n");
-
   // randomly select a first leader
   const playerIds = room.server.players.map(p => p.id);
   const rand = randomBytes(4).readUInt32BE(0);
@@ -166,26 +190,29 @@ export function startGame(room: Room) {
     client.firstLeaderId = firstLeaderId;
   }
 
-  console.log("After Random Leader Selection: ")
-  console.dir(room, { depth: null, colors: true });
-  console.log("\n");
 
   // Inform Clients of Their Own Role and Secret Info
   for (const client of room.clients) {
-    // 1) start with a fresh “unknown” view:
     client.gameInProgress = true;
+    // if they are a spectator and omnipotent, they know everyone
+    const serverPlayer = room.server.players.find((p) => p.id === client.clientId);
+    if (serverPlayer!.role === "Spectator" && room.server.settings.omnipotentSpectators) {
+      client.players = room.server.players.map((player) => ({ ...player }));
+      break;
+    }
+
+    // 1) start with a fresh “unknown” view:
     client.players = room.server.players.map(p => ({
       id: p.id,
       name: p.name,
-      role: "Unknown" as const,
-      allegiance: "Unknown" as const,
+      role: p.role !== "Spectator" ? "Unknown" : "Spectator",
+      allegiance: p.role !== "Spectator" ? "Unknown" : "No Allegiance",
     }));
 
     console.dir(client.players, { depth: null, colors: null });
 
     // 1a) learn of own role
     const clientPlayer = client.players.find(p => p.id === client.clientId);
-    const serverPlayer = room.server.players.find((p) => p.id === client.clientId);
     clientPlayer!.role = serverPlayer!.role;
     clientPlayer!.allegiance = serverPlayer!.allegiance;
 
@@ -195,20 +222,14 @@ export function startGame(room: Room) {
 
     // 3) apply only the overrides this role gets
     const overrides = fn(room.server, me);
-    console.log(`My Role: ${me.role}`);
-    console.log("My overrides:")
-    console.log(overrides);
     for (const [id, { role, allegiance }] of Object.entries(overrides)) {
-      console.log(`id: ${id}`);
-      console.log(`role: ${role}`);
-      console.log(`allegiance: ${allegiance}`);
       const view = client.players.find(v => v.id === id)!;
-      console.log(`view ${view}`);
       if (role) view.role = role;
       if (allegiance) view.allegiance = allegiance;
     }
   }
 
+  room.server.gameInProgress = true; 
   io.to(room.server.code).emit("logMessage", { 
     mes: "Game Start! View Secret Info in the Knowledge Tab",
     color: "green"
@@ -239,7 +260,22 @@ function shuffleDeck(deck: Deck): Role[] {
 
 
 export function stopGame(room: Room) {
+  // clients get perfect info:
+  for (const client of room.clients) {
+    client.gameInProgress = false;
+    client.players = room.server.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      role: p.role,
+      allegiance: p.allegiance,
+    }));
+  }
 
+  room.server.gameInProgress = false; 
+  io.to(room.server.code).emit("logMessage", { 
+    mes: "Game Stopped!",
+    color: "red"
+  });
 }
 
 
@@ -253,8 +289,17 @@ export function addNewClient(room: Room, clientId: string, name?: string) {
     code: room.server.code,
     firstLeaderId: room.server.firstLeaderId,
     gameInProgress: room.server.gameInProgress,
-    players: room.server.players.map((player) => ({ ...player })),
+    players: 
+      room.server.settings.omnipotentSpectators || !room.server.gameInProgress ?
+        room.server.players.map((player) => ({ ...player })) :
+        room.server.players.map(p => ({
+          id: p.id,
+          name: p.name,
+          role: p.role !== "Spectator" ? "Unknown" : "Spectator",
+          allegiance: p.role !== "Spectator" ? "Unknown" : "No Allegiance",
+        })),
     settings: {
+      omnipotentSpectators: room.server.settings.omnipotentSpectators,
       deck: JSON.parse(JSON.stringify(room.server.settings.deck)),
     },
   });

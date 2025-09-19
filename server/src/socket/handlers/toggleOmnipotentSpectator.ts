@@ -1,23 +1,18 @@
 import type { DefaultEventsMap, Socket } from "socket.io";
 import { rooms } from "../../index.js";
+import { broadcastRoomClientStates, toggleOmnipotentSpectator } from "../roomService.js";
 import { validateHost } from "../validators.js";
-import { broadcastRoomClientStates, reorderPlayers, stopGame } from "../roomService.js";
 
 
-export function setupStopGameHandler(
+export function setupToggleOmnipotentSpectator(
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) {
-  socket.on("stopGame", ({ code }: { code: string }) => {
+  socket.on("toggleOmnipotentSpectators", ({ code }: { code: string }) => {
     const room = rooms[code];
     const clientId = validateHost(socket, room);
     if (!clientId || !room) return;
 
-    if (!room.server.gameInProgress) {
-        socket.emit("error", "Game already stopped.");
-        return;
-    }
-
-    stopGame(room);
+    toggleOmnipotentSpectator(room);
     broadcastRoomClientStates(room);
   });
 }
