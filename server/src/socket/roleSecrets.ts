@@ -24,7 +24,7 @@ const seeAllVisibleEvil: SecretProvider = (room, you) => {
     .map((p: Player) => p.id);
   let initInfo: RevealOverrides = {};
   const blindHunter = room.players.find(p => p.role === "Blind Hunter");
-  if (!room.settings.deck.directorsCut && numberOfPlayersForDeck(room.settings.deck) <= 5 && blindHunter) {
+  if (blindHunter && (!room.settings.deck.directorsCut || numberOfPlayersForDeck(room.settings.deck) <= 5)) {
     initInfo[blindHunter.id] = { allegiance: blindHunter.allegiance, role: blindHunter.role }
   }
   const scion = room.players.find(p => p.role === "Scion");
