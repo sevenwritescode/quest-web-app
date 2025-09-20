@@ -118,18 +118,19 @@ function RoomScreen() {
   //   }))
   //   setPayload({
   //     log: testLog,
+  //     firstLeaderId: "0",
+  //     gameInProgress: false,
   //     players: 
   //     // [],
-  //     Array.from({ length: 10 }, (_, i) => ({
+  //     Array.from({ length: 100 }, (_, i) => ({
   //       id: `player${i + 1}`,
   //       name: `Test Player ${i + 1}`,
-  //       Role: "Spectator",
-  //       roleKnown: false,
-  //       allegianceKnown: false
+  //       role: "Spectator",
+  //       allegiance: "No Allegiance"
   //     })),
   //     settings: {
-  //       numberOfPlayers: 3,
-  //       deck: { items: [] }
+  //       omnipotentSpectators: false,
+  //       deck: { directorsCut: true, items: [] }
   //     },
   //     code: "POOP",
   //     clientId: "test",

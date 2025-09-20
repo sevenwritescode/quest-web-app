@@ -558,10 +558,10 @@
     flex-direction: column;
     gap: 0.4em;
     overflow-y: auto;
-    padding-top: 5rem; /* offset for header buttons */
+    padding-top: 4.5rem; /* offset for header buttons */
     /* Fade out at top when scrolling */
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 5%, black 10%, black 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, transparent 5%, black 10%, black 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 3.5rem, black 4rem);
+    mask-image: linear-gradient(to bottom, transparent 3.5rem, black 4rem);
 }
 .player-list::-webkit-scrollbar {
     width: 8px;
@@ -578,44 +578,85 @@
     background: rgba(255,255,255,0.5);
 }
 
+/* New player-card styles */
+.player-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: calc(100% - 2rem);
+    padding: 1rem 1rem;
+    min-height: 1.5rem;
+    background: #383838;
+    border: 1px solid #555;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.player-card:hover {
+    background: #4a4a4a;
+}
+.player-card.spectator {
+    opacity: 0.6;
+}
+.player-name {
+    flex: 0 1 auto;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #fff;
+}
+.player-badges {
+    display: flex;
+    gap: 0.5rem;
+}
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.4rem;
+    background: #666;
+    color: #fff;
+    font-size: 0.75rem;
+    border-radius: 0.25rem;
+    text-align: center;
+}
+.you-badge { background: #2a6bf0; }
+.host-badge { background: #f0a02a; }
+.leader-badge {
+    width: 20px;
+    height: 20px;
+}
+.host-badge {
+    font-weight: 600;
+}
 
 .player-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem;
-    padding-inline: 1rem;
-    border: 2px solid #000;
+    width: calc(100% - 18rem);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background-color: #2d2d2d;
     border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    width: 17rem;
-    height: 3rem;
-    background-color: rgb(46, 46, 46);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.anonymous {
-    font-style: italic;
-    color: rgb(168, 168, 168);
-}
-
-.spectator {  
-    color: rgb(228, 228, 228);
-}
-
-.player-name, .anonymous {
-    flex: 0 0 33%;
+/* Name styling */
+.player-name {
     text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.player-name.spectator {
+    color: #888;
+    font-style: italic;
 }
 
-.role-name {
-    flex: 0 0 33%;
-    text-align: right;
-}
 
+/* Badge container */
 .player-badges {
     display: flex;
-    justify-content: right;
-    flex: 0 0 33%;
+    gap: 0.5rem;
+    align-items: center;
 }
 /* First Leader Badge Styles */
 .leader-badge {
@@ -625,21 +666,6 @@
     margin-right: 0.5rem;
 }
 
-.host-badge, .you-badge
-{ 
-    flex: 0 0 45%;
-    padding: 0rem;
-}
-
-.host-badge {
-    
-    font-weight: 600;
-    text-align: right;
-}
-
-.you-badge {
-    text-align: right;
-}
 
 
 
@@ -680,6 +706,39 @@
     background-color: rgba(27, 27, 27, 0.90);
     background-image: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1));
     color: #ccc;
+}
+/* Per-Player Knowledge Modal Styles */
+.player-knowledge-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5000;
+}
+.player-knowledge-modal {
+    background: #2d2d2d;
+    color: #fff;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80%;
+    max-width: 400px;
+}
+.player-knowledge-name {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+.player-knowledge-img {
+    width: 200px;
+    height: auto;
+    object-fit: contain;
 }
 .log-notice-banner.red {
     background-color: rgba(27, 27, 27, 0.90);

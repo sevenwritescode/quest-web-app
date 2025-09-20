@@ -31,6 +31,9 @@ export default function Room(props: RoomProps) {
     const [displayQRCode, setDisplayQRCode] = useState(false);
     const [displayLog, setDisplayLog] = useState(false);
     const [displayKnowledge, setDisplayKnowledge] = useState(false);
+    // Per-player knowledge modal
+    type KnowledgeEntry = { id: string; name?: string; label: string; img: string; isSelf: boolean };
+    const [selectedPlayerEntry, setSelectedPlayerEntry] = useState<KnowledgeEntry | null>(null);
     // Modal stack for nested dialogs
     const [modalStack, setModalStack] = useState<string[]>([]);
     const pushModal = (modal: string) => setModalStack(stack => [...stack, modal]);
@@ -281,39 +284,46 @@ export default function Room(props: RoomProps) {
             </div>
         )}
 
-
-        <div className="player-list">
-            {props.payload.players.map((player, index) => (
-                <div 
-                    className="player-container" 
-                    key={player.id ?? index}
-                    onClick={() => console.log(player.name)}
-                >
-                    <div className="player-item">
-                        {player.name !== undefined
-                            ? <div className="player-name">{player.name}</div>
-                            : <div className="anonymous">Anonymous</div>
-                        }
-                        <div className={"role-name "
-                            + (player.role)}>
-                            {player.role === "Spectator" ? "Spectator" : ""}
-                        </div>
-                        <div className="player-badges">
-                            {player.id === props.payload.firstLeaderId && (
-                                <img src={leaderImg} alt="First Leader" className="leader-badge" />
-                            )}
-                            {player.id === props.payload.clientId &&
-                                <div className={"you-badge "}>
-                                    (You)
-                                </div>}
-                            {player.id === props.payload.hostId &&
-                                <div className={"host-badge "}>
-                                    Host
-                                </div>}
-                        </div>
+        {/* Per-Player Knowledge Modal */}
+        {selectedPlayerEntry && (
+            <div className="player-knowledge-overlay" onClick={() => setSelectedPlayerEntry(null)}>
+                <div className="player-knowledge-modal" onClick={e => e.stopPropagation()}>
+                    <div className="player-knowledge-name">{selectedPlayerEntry.name || 'Unknown'}</div>
+                    <div className="player-knowledge-entry self">
+                        <img src={selectedPlayerEntry.img} alt={selectedPlayerEntry.label} className="player-knowledge-img" />
                     </div>
                 </div>
-            ))}
+            </div>
+        )}
+
+
+        <div className="player-list">
+            {props.payload.players.map((player, idx) => {
+                const isSpectator = player.role === 'Spectator';
+                return (
+                    <div
+                        key={player.id ?? idx}
+                        className={`player-card${isSpectator ? ' spectator' : ''}`}
+                        onClick={() => {
+                            const entry = knowledgeEntries.find(e => e.id === player.id);
+                            if (entry) setSelectedPlayerEntry(entry);
+                        }}
+                    >
+                        <span className="player-name">{player.name || 'Anonymous'}</span>
+                        <div className="player-badges">
+                            {player.id === props.payload.firstLeaderId && (
+                                <img src={leaderImg} alt="Leader Badge" className="leader-badge" />
+                            )}
+                            {player.id === props.payload.clientId && (
+                                <span className="badge you-badge" title="You">You</span>
+                            )}
+                            {player.id === props.payload.hostId && (
+                                <span className="badge host-badge" title="Host">Host</span>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
         </div>
         {showSettingsModal && (
             <div className="settings-overlay" onClick={() => popModal()}>
