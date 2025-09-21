@@ -584,19 +584,17 @@
     justify-content: space-between;
     align-items: center;
     width: calc(100% - 2rem);
-    padding: 1rem 1rem;
-    min-height: 1.5rem;
+    padding: 0.5rem 1rem;
+    min-height: 3rem;
     background: #383838;
     border: 1px solid #555;
     border-radius: 0.5rem;
     cursor: pointer;
     transition: background 0.2s;
 }
-.player-card:hover {
-    background: #4a4a4a;
-}
+
 .player-card.spectator {
-    opacity: 0.6;
+    opacity: 0.4;
 }
 .player-name {
     flex: 0 1 auto;
@@ -739,6 +737,11 @@
     width: 200px;
     height: auto;
     object-fit: contain;
+}
+.player-knowledge-img.placeholder {
+    width: 200px;
+    height: 200px;
+    background: transparent;
 }
 .log-notice-banner.red {
     background-color: rgba(27, 27, 27, 0.90);

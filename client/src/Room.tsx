@@ -290,7 +290,11 @@ export default function Room(props: RoomProps) {
                 <div className="player-knowledge-modal" onClick={e => e.stopPropagation()}>
                     <div className="player-knowledge-name">{selectedPlayerEntry.name || 'Unknown'}</div>
                     <div className="player-knowledge-entry self">
-                        <img src={selectedPlayerEntry.img} alt={selectedPlayerEntry.label} className="player-knowledge-img" />
+                        {selectedPlayerEntry.img ? (
+                            <img src={selectedPlayerEntry.img} alt={selectedPlayerEntry.label} className="player-knowledge-img" />
+                        ) : (
+                            <div className="player-knowledge-img placeholder" />
+                        )}
                     </div>
                 </div>
             </div>
@@ -306,7 +310,17 @@ export default function Room(props: RoomProps) {
                         className={`player-card${isSpectator ? ' spectator' : ''}`}
                         onClick={() => {
                             const entry = knowledgeEntries.find(e => e.id === player.id);
-                            if (entry) setSelectedPlayerEntry(entry);
+                            if (entry) {
+                                setSelectedPlayerEntry(entry);
+                            } else {
+                                setSelectedPlayerEntry({
+                                    id: player.id,
+                                    name: player.name,
+                                    label: '',
+                                    img: '',
+                                    isSelf: player.id === props.payload.clientId
+                                });
+                            }
                         }}
                     >
                         <span className="player-name">{player.name || 'Anonymous'}</span>
