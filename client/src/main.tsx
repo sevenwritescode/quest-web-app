@@ -5,6 +5,16 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./css/index.css";
 
+// Preload all images under assets directory without delaying initial render
+// Use Vite import.meta.glob with eager loading
+{
+  const modules = (import.meta as any).glob('./assets/**/*.{webp,png,jpg,svg}', { eager: true });
+  Object.values(modules as Record<string, { default: string }>).forEach(mod => {
+    const img = new Image();
+    img.src = mod.default;
+  });
+}
+
 const container = document.getElementById("root");
 if (!container) throw new Error("Could not find root element");
 
@@ -21,4 +31,4 @@ root.render(
       </div>
     </div>
   </StrictMode>
-);  
+);
