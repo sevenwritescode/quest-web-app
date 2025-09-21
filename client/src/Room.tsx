@@ -323,7 +323,7 @@ export default function Room(props: RoomProps) {
                             }
                         }}
                     >
-                        <span className="player-name">{player.name || 'Anonymous'}</span>
+                        <span className={`player-name ${player.name || 'anonymous'}`}>{player.name || 'Anonymous'}</span>
                         <div className="player-badges">
                             {player.id === props.payload.firstLeaderId && (
                                 <img src={leaderImg} alt="Leader Badge" className="leader-badge" />
