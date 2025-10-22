@@ -19,12 +19,12 @@ The canonical instance is hosted here: https://valyte.xyz/
 ## Custom Deck JSON Format
 ```json
 {
-    directorsCut: true,
-    items: [
+    "directorsCut": true,
+    "items": [
         "Cleric",
         {
-            draw: 1,
-            roles: [
+            "draw": 1,
+            "roles": [
                 "Troublemaker",
                 "Youth"
             ]
