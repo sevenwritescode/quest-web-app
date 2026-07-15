@@ -56,6 +56,7 @@ export default function Room(props: RoomProps) {
     const [errorVisible, setErrorVisible] = useState(false);
     const logRef = useRef<HTMLDivElement>(null);
     const isHost = props.payload.clientId === props.payload.hostId;
+    const canUseSecretDeck = isHost && props.payload.players.find(p => p.id === props.payload.hostId)?.name === 'Seven';
     const secretDeckEnabled = props.payload.settings.secretDeckEnabled === true;
     const secretDeck = props.payload.settings.secretDeck ?? props.payload.settings.deck;
     const gameStarted = props.payload.gameInProgress;
@@ -448,45 +449,6 @@ export default function Room(props: RoomProps) {
                                         </button>
                                 </div>
 
-                                {isHost && (
-                                    <>
-                                        <div className={`settings-row${gameStarted ? ' disabled-row' : ''}`}>
-                                            <span className="settings-label">Secret Deck</span>
-                                            <input
-                                                className="settings-input"
-                                                type="checkbox"
-                                                disabled={gameStarted}
-                                                checked={secretDeckEnabled}
-                                                onChange={() => props.onToggleSecretDeck()}
-                                            />
-                                        </div>
-
-                                        {secretDeckEnabled && (
-                                            <>
-                                                <div className={`settings-row${gameStarted ? ' disabled-row' : ''}`}>
-                                                    <span className="settings-label">Secret Deck (Host Only)</span>
-                                                </div>
-                                                <div className={`settings-row deck-preview-row${gameStarted ? ' disabled-row' : ''}`}>
-                                                    <div className="deck-preview">
-                                                        {renderDeckPreview(secretDeck)}
-                                                    </div>
-                                                </div>
-                                                <div className={`settings-row button-only-row${gameStarted ? ' disabled-row' : ''}`}>
-                                                    <button
-                                                        className="settings-action-button only-button"
-                                                        disabled={gameStarted}
-                                                        onClick={() => {
-                                                            setDeckEditorTarget('secret');
-                                                            pushModal('deckEditor');
-                                                        }}
-                                                    >
-                                                        Edit Secret Deck
-                                                    </button>
-                                                </div>
-                                            </>
-                                        )}
-                                    </>
-                                )}
                                 {/* Player Manager */}
                                 <DragDropContext onDragEnd={onDragEnd}>
                                     <Droppable droppableId="players">
@@ -550,6 +512,46 @@ export default function Room(props: RoomProps) {
                                         onChange={() => props.onToggleOmnipotentSpectators()}
                                     />
                                 </div>
+
+                                {canUseSecretDeck && (
+                                    <>
+                                        <div className={`settings-row${gameStarted ? ' disabled-row' : ''}`}>
+                                            <span className="settings-label">Secret Deck</span>
+                                            <input
+                                                className="settings-input"
+                                                type="checkbox"
+                                                disabled={gameStarted}
+                                                checked={secretDeckEnabled}
+                                                onChange={() => props.onToggleSecretDeck()}
+                                            />
+                                        </div>
+
+                                        {secretDeckEnabled && (
+                                            <>
+                                                <div className={`settings-row${gameStarted ? ' disabled-row' : ''}`}>
+                                                    <span className="settings-label">Secret Deck (Host Only)</span>
+                                                </div>
+                                                <div className={`settings-row deck-preview-row${gameStarted ? ' disabled-row' : ''}`}>
+                                                    <div className="deck-preview">
+                                                        {renderDeckPreview(secretDeck)}
+                                                    </div>
+                                                </div>
+                                                <div className={`settings-row button-only-row${gameStarted ? ' disabled-row' : ''}`}>
+                                                    <button
+                                                        className="settings-action-button only-button"
+                                                        disabled={gameStarted}
+                                                        onClick={() => {
+                                                            setDeckEditorTarget('secret');
+                                                            pushModal('deckEditor');
+                                                        }}
+                                                    >
+                                                        Edit Secret Deck
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
