@@ -52,11 +52,12 @@ function generateRoomCode(length = 4): string {
 }
 
 function getSessionAuth(req: express.Request, res: express.Response): string {
-  let sessionAuth = req.cookies.sessionAuth as string;
+  const headerSessionAuth = req.get("x-session-auth");
+  let sessionAuth = (headerSessionAuth || req.cookies.sessionAuth) as string;
   if (!sessionAuth) {
     sessionAuth = uuid();
-    res.cookie("sessionAuth", sessionAuth, { httpOnly: true });
   }
+  res.cookie("sessionAuth", sessionAuth, { httpOnly: true, sameSite: "lax" });
   return sessionAuth;
 }
 
@@ -64,11 +65,9 @@ app.post("/api/create-room", (req, res) => {
   const sessionAuth = getSessionAuth(req, res);
   let roomCode = generateRoomCode();
   const hostId = uuid();
-  if (req.body.name === "Seven") {
+  // Seven is the host of BUNE so long as the room doesn't exist.
+  if (req.body.name === "Seven" && !rooms["BUNE"]) {
     roomCode = "BUNE";
-    const room = rooms[roomCode];
-    // Seven is always the host of BUNE 
-    if (room) { room.server.hostId = hostId; }
   }
   rooms[roomCode] = {
     server: {
@@ -109,7 +108,8 @@ export const io = new Server(server, { path: "/socket.io" });
 io.use((socket, next) => {
   const raw = socket.handshake.headers.cookie || "";
   const cookies = cookie.parse(raw);
-  let sessionAuth = cookies.sessionAuth;
+  const authSession = socket.handshake.auth?.sessionAuth;
+  let sessionAuth = authSession || cookies.sessionAuth;
   
   if (!sessionAuth) {
     socket.emit("error", "Invalid Session Auth");
