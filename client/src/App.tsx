@@ -296,13 +296,22 @@ function RoomScreen() {
     sock.emit("leaveRequest", { code })
   }
 
-  const doDeckChange = (deck: Deck) => {
+  const doDeckChange = (deck: Deck, target: "public" | "secret" = "public") => {
     const sock = sockRef.current;
     if (!sock || sock.disconnected) {
       console.warn("socket not ready yet");
       return;
     }
-    sock.emit("changeDeck", { deck, code });
+    sock.emit("changeDeck", { deck, code, target });
+  }
+
+  const doToggleSecretDeck = () => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    sock.emit("toggleSecretDeck", { code });
   }
 
   const doKickPlayer = (playerId: string) => {
@@ -372,6 +381,7 @@ function RoomScreen() {
       onChangeName={doChangeName}
       onBecomeSpectator={doBecomeSpectator}
       onDeckChange={doDeckChange}
+      onToggleSecretDeck={doToggleSecretDeck}
       onKickPlayer={doKickPlayer}
       onToggleSpectator={doToggleSpectator}
       onReorderPlayers={doReorderPlayers}

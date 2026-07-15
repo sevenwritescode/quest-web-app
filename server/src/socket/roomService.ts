@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { io, rooms } from "../index.js";
-import { type Room, type Deck, type Role, isRolePool, ROLE_DATA } from "../types.js";
+import { type Room, type Deck, type Role, isRolePool, ROLE_DATA, getEffectiveDeck } from "../types.js";
 import { shuffle } from "../utils.js";
 import { DEFAULT_SECRET_PROVIDER, SECRET_PROVIDERS } from "./roleSecrets.js";
 
@@ -17,6 +17,24 @@ function clearRoomCleanupTimer(roomCode: string) {
     clearTimeout(timer);
   }
   roomCleanupTimers.delete(roomCode);
+}
+
+function cloneDeck(deck: Deck): Deck {
+  return JSON.parse(JSON.stringify(deck));
+}
+
+function syncClientSettingsFromServer(room: Room, clientState: Room["clients"][number]) {
+  clientState.settings.omnipotentSpectators = room.server.settings.omnipotentSpectators;
+  clientState.settings.deck = cloneDeck(room.server.settings.deck);
+
+  if (clientState.clientId === room.server.hostId) {
+    clientState.settings.secretDeckEnabled = room.server.settings.secretDeckEnabled;
+    clientState.settings.secretDeck = cloneDeck(room.server.settings.secretDeck);
+    return;
+  }
+
+  clientState.settings.secretDeckEnabled = false;
+  delete clientState.settings.secretDeck;
 }
 
 export function markRoomActive(roomCode: string) {
@@ -178,11 +196,40 @@ export function updatePlayerNameInRoom(room: Room, clientId: string, newName: st
  * Update the active deck in the room.
  */
 export function updateDeckInRoom(room: Room, deck: Deck) {
-  room.server.settings.deck = deck;
+  updateDeckInRoomByTarget(room, deck, "public");
+}
+
+export function updateDeckInRoomByTarget(room: Room, deck: Deck, target: "public" | "secret") {
+  if (target === "secret") {
+    room.server.settings.secretDeck = cloneDeck(deck);
+    for (const clientState of room.clients) {
+      if (clientState.clientId === room.server.hostId) {
+        clientState.settings.secretDeck = cloneDeck(deck);
+      }
+    }
+    io.to(room.server.hostId).emit("logMessage", { mes: `Host updated Secret Deck.` });
+    return;
+  }
+
+  room.server.settings.deck = cloneDeck(deck);
   for (const clientState of room.clients) {
-    clientState.settings.deck = deck;
+    clientState.settings.deck = cloneDeck(deck);
   }
   io.to(room.server.code).emit("logMessage", { mes: `Host updated Deck.` });
+}
+
+export function toggleSecretDeck(room: Room) {
+  room.server.settings.secretDeckEnabled = !room.server.settings.secretDeckEnabled;
+  for (const clientState of room.clients) {
+    syncClientSettingsFromServer(room, clientState);
+  }
+
+  io.to(room.server.hostId).emit("logMessage", {
+    mes: room.server.settings.secretDeckEnabled
+      ? "Secret Deck enabled."
+      : "Secret Deck disabled.",
+    color: "gray"
+  });
 }
 
 export function toggleOmnipotentSpectator(room: Room) {
@@ -226,7 +273,7 @@ export function toggleOmnipotentSpectator(room: Room) {
 export function startGame(room: Room) {
   // Distribute Roles on Server Side
   let index: number = -1;
-  const roles = shuffleDeck(room.server.settings.deck);
+  const roles = shuffleDeck(getEffectiveDeck(room.server.settings));
   roles.forEach((role) => {
     let player;
     do {
@@ -345,6 +392,8 @@ export function stopGame(room: Room) {
  * Add a brand new client to server and existing client states.
  */
 export function addNewClient(room: Room, clientId: string, name?: string) {
+  const isHostClient = clientId === room.server.hostId;
+
   room.clients.push({
     clientId,
     hostId: room.server.hostId,
@@ -362,7 +411,9 @@ export function addNewClient(room: Room, clientId: string, name?: string) {
         })),
     settings: {
       omnipotentSpectators: room.server.settings.omnipotentSpectators,
-      deck: JSON.parse(JSON.stringify(room.server.settings.deck)),
+      deck: cloneDeck(room.server.settings.deck),
+      secretDeckEnabled: isHostClient ? room.server.settings.secretDeckEnabled : false,
+      ...(isHostClient ? { secretDeck: cloneDeck(room.server.settings.secretDeck) } : {}),
     },
   });
 
@@ -390,9 +441,16 @@ export function addNewClient(room: Room, clientId: string, name?: string) {
  */
 export function broadcastRoomClientStates(room: Room) {
   for (const player of room.server.players) {
+    const clientState = room.clients.find((p) => p.clientId === player.id);
+    if (!clientState) {
+      continue;
+    }
+
+    syncClientSettingsFromServer(room, clientState);
+
     io.to(player.id).emit(
       "roomStateUpdate",
-      room.clients.find((p) => p.clientId === player.id)
+      clientState
     );
   }
 }

@@ -1,11 +1,8 @@
 import type { DefaultEventsMap, Socket } from "socket.io";
 import { rooms } from "../../index.js";
 import { validateHost } from "../validators.js";
-import { broadcastRoomClientStates, reorderPlayers, startGame } from "../roomService.js";
-import { isRolePool, numberOfPlayersForDeck, ROLE_DATA, type Deck, type Role } from "../../types.js";
-import { shuffle } from "../../utils.js";
-import { randomBytes } from "crypto";
-import { DEFAULT_SECRET_PROVIDER, SECRET_PROVIDERS } from "../roleSecrets.js";
+import { broadcastRoomClientStates, startGame } from "../roomService.js";
+import { getEffectiveDeck, numberOfPlayersForDeck } from "../../types.js";
 
 
 export function setupStartGameHandler(
@@ -21,7 +18,7 @@ export function setupStartGameHandler(
     }
 
     // ensure that deck is valid in terms of player count
-    const deckPlayerCount = numberOfPlayersForDeck(room.server.settings.deck);
+    const deckPlayerCount = numberOfPlayersForDeck(getEffectiveDeck(room.server.settings));
     const roomPlayerCount = room.server.players.filter(player => player.role !== "Spectator").length;
     if (deckPlayerCount !== roomPlayerCount)
     {

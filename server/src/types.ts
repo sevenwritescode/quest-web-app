@@ -53,6 +53,17 @@ export type Deck = {
   items: DeckItem[]
 }
 
+export type DeckSettings = {
+  deck: Deck,
+  secretDeckEnabled: boolean,
+  secretDeck: Deck,
+  omnipotentSpectators: boolean
+}
+
+export function getEffectiveDeck(settings: DeckSettings): Deck {
+  return settings.secretDeckEnabled ? settings.secretDeck : settings.deck;
+}
+
 export function numberOfPlayersForDeck(deck: Deck) {
   let count = 0;
   for (const deckItem of deck.items) {
@@ -77,6 +88,8 @@ export type RoomClientState = {
   settings: {
     omnipotentSpectators: boolean
     deck: Deck,
+    secretDeckEnabled?: boolean,
+    secretDeck?: Deck,
   }
 }
 
@@ -118,10 +131,7 @@ export type RoomServerState = {
   hostId: string,
   firstLeaderId: string | undefined,
   gameInProgress: boolean, 
-  settings: {
-    deck: Deck,
-    omnipotentSpectators: boolean
-  }
+  settings: DeckSettings
   // server only props
   authToId: Record<string,string>
 }

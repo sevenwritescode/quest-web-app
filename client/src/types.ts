@@ -87,6 +87,8 @@ export type RoomClientState = {
   settings: {
     omnipotentSpectators: boolean,
     deck: Deck,
+    secretDeckEnabled?: boolean,
+    secretDeck?: Deck,
   }
 
   // non-server reflected state

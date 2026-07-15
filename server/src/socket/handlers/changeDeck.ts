@@ -3,12 +3,20 @@ import type { Deck } from "../../types.ts";
 import { isRolePool } from "../../types.js";
 import { rooms } from "../../index.js";
 import { validateHost } from "../validators.js";
-import { updateDeckInRoom, broadcastRoomClientStates } from "../roomService.js";
+import { updateDeckInRoomByTarget, broadcastRoomClientStates } from "../roomService.js";
 
 export function setupChangeDeckHandler(
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
 ) {
-  socket.on("changeDeck", ({ deck, code }: { deck: Deck; code: string }) => {
+  socket.on("changeDeck", ({
+    deck,
+    code,
+    target
+  }: {
+    deck: Deck;
+    code: string;
+    target?: "public" | "secret";
+  }) => {
     const room = rooms[code];
     const clientId = validateHost(socket, room);
     if (!clientId || !room) return;
@@ -29,7 +37,7 @@ export function setupChangeDeckHandler(
       }
     }
 
-    updateDeckInRoom(room, deck);
+    updateDeckInRoomByTarget(room, deck, target === "secret" ? "secret" : "public");
     broadcastRoomClientStates(room);
   });
 }
