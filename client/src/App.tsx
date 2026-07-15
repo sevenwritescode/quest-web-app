@@ -15,6 +15,26 @@ import { io, type Socket } from 'socket.io-client';
 import type { Deck, LandingState, RoomClientState  } from "./types"
 import { canonicalDecks } from './data/decks';
 
+const SESSION_AUTH_STORAGE_KEY = "quest.sessionAuth";
+
+async function ensureSessionAuth() {
+  const storedAuth = window.localStorage.getItem(SESSION_AUTH_STORAGE_KEY);
+  if (storedAuth) {
+    return storedAuth;
+  }
+
+  const res = await fetch("/api/session", {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to initialize session auth: ${res.status}`);
+  }
+
+  const { sessionAuth } = await res.json() as { sessionAuth: string };
+  window.localStorage.setItem(SESSION_AUTH_STORAGE_KEY, sessionAuth);
+  return sessionAuth;
+}
+
 
 
 // 1) Top-level router
@@ -51,10 +71,11 @@ function LandingScreen() {
     }
     doPayloadChange({ hostLoading: true });
     try {
+      const sessionAuth = await ensureSessionAuth();
       const res = await fetch(`/api/create-room`, {
         method: "POST",
         body: JSON.stringify({ name: payload.name }),
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-session-auth": sessionAuth },
         credentials: 'include'
       });
       if (!res.ok) throw {message: `${res.status}: ${await res.text()}`};
@@ -163,59 +184,76 @@ function RoomScreen() {
       name = undefined;
     }
 
-    const sock = io("/", {
-        path: "/socket.io",
-        withCredentials: true 
-    });
-    sockRef.current = sock;
-    console.log(code)
+    let cancelled = false;
 
-    sock.on("connect_error", (err: any) => {
-      console.error("socket connect_error:", err?.message);
-      navigate("/", {
-        replace: true,
-        state: { error: String(err || "Connection error") }
-      })
-    });
+    const connect = async () => {
+      try {
+        const sessionAuth = await ensureSessionAuth();
+        if (cancelled) return;
 
-    sock.on("connect", () => {
-      sock.emit("join", { code, name });
-      setIsLoading(false);
-    });
+        const sock = io("/", {
+            path: "/socket.io",
+            withCredentials: true,
+            auth: { sessionAuth }
+        });
+        sockRef.current = sock;
 
-    sock.on("roomStateUpdate", (state: Partial<RoomClientState>) => {
-      doPayloadChange(state);
-    });
+        sock.on("connect_error", (err: any) => {
+          console.error("socket connect_error:", err?.message);
+          navigate("/", {
+            replace: true,
+            state: { error: String(err || "Connection error") }
+          })
+        });
 
-    sock.on("logMessage", (message: {mes: string, color: string}) => {
-      setPayload(prev => ({
-        ...prev,
-        log: [...prev.log, message]
-      }));
-    });
+        sock.on("connect", () => {
+          sock.emit("join", { code, name });
+          setIsLoading(false);
+        });
 
-    sock.on("error", (err: string) => {
-      doPayloadChange({error: err});
-    });
+        sock.on("roomStateUpdate", (state: Partial<RoomClientState>) => {
+          doPayloadChange(state);
+        });
 
-    sock.on("disconnect_request", (mes: string) => {
-      console.log("socket disconnect request:", mes); 
-      sock.disconnect();
-      navigate("/", {
-        state: { error: mes }
-      });
-    });
+        sock.on("logMessage", (message: {mes: string, color: string}) => {
+          setPayload(prev => ({
+            ...prev,
+            log: [...prev.log, message]
+          }));
+        });
 
-    sock.on("disconnect", (err: any) => {
-      console.log("socket disconnect:", err); 
-      doPayloadChange({ error: err });
-      // navigate("/", {
-      //   replace: true,
-      //   state: { error: String(err || "Connection Disconnect") }
-      // });
-    });
+        sock.on("error", (err: string) => {
+          doPayloadChange({error: err});
+        });
+
+        sock.on("disconnect_request", (mes: string) => {
+          console.log("socket disconnect request:", mes); 
+          sock.disconnect();
+          navigate("/", {
+            state: { error: mes }
+          });
+        });
+
+        sock.on("disconnect", (err: any) => {
+          console.log("socket disconnect:", err); 
+          doPayloadChange({ error: err });
+          // navigate("/", {
+          //   replace: true,
+          //   state: { error: String(err || "Connection Disconnect") }
+          // });
+        });
+      } catch (error: any) {
+        navigate("/", {
+          replace: true,
+          state: { error: String(error?.message || error || "Failed to initialize session") }
+        });
+      }
+    };
+
+    connect();
 
     return () => {
+      cancelled = true;
       const sock = sockRef.current;
       if (sock) {
         sock.off();
