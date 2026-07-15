@@ -1,8 +1,52 @@
 import { randomBytes } from "crypto";
-import { io } from "../index.js";
+import { io, rooms } from "../index.js";
 import { type Room, type Deck, type Role, isRolePool, ROLE_DATA } from "../types.js";
 import { shuffle } from "../utils.js";
 import { DEFAULT_SECRET_PROVIDER, SECRET_PROVIDERS } from "./roleSecrets.js";
+
+const ROOM_INACTIVITY_MS = 4 * 60 * 60 * 1000;
+const roomCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function getActiveRoomSocketCount(roomCode: string) {
+  return io.sockets.adapter.rooms.get(roomCode)?.size ?? 0;
+}
+
+function clearRoomCleanupTimer(roomCode: string) {
+  const timer = roomCleanupTimers.get(roomCode);
+  if (timer) {
+    clearTimeout(timer);
+  }
+  roomCleanupTimers.delete(roomCode);
+}
+
+export function markRoomActive(roomCode: string) {
+  clearRoomCleanupTimer(roomCode);
+}
+
+export function scheduleRoomCleanupIfIdle(roomCode: string, room: Room) {
+  if (getActiveRoomSocketCount(roomCode) !== 0) {
+    return;
+  }
+
+  clearRoomCleanupTimer(roomCode);
+  const timer = setTimeout(() => {
+    const currentRoom = rooms[roomCode];
+    if (!currentRoom || currentRoom !== room) {
+      roomCleanupTimers.delete(roomCode);
+      return;
+    }
+
+    if (getActiveRoomSocketCount(roomCode) > 0) {
+      roomCleanupTimers.delete(roomCode);
+      return;
+    }
+
+    delete rooms[roomCode];
+    roomCleanupTimers.delete(roomCode);
+  }, ROOM_INACTIVITY_MS);
+
+  roomCleanupTimers.set(roomCode, timer);
+}
 
 /**
  * Promote a client to spectator.

@@ -3,7 +3,7 @@ import { io, rooms } from "../../index.js";
 import { v4 as uuid } from 'uuid';
 import type { Room } from "../../types.ts";
 import { validateClient, isValidName, existsNameCollision } from "../validators.js";
-import { addNewClient, broadcastRoomClientStates, updatePlayerNameInRoom } from "../roomService.js";
+import { addNewClient, broadcastRoomClientStates, updatePlayerNameInRoom, markRoomActive } from "../roomService.js";
 
 export function setupJoinHandler(socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {
   socket.on("join", ({ code, name }: { name?: string; code: string }) => {
@@ -19,6 +19,8 @@ export function setupJoinHandler(socket: Socket<DefaultEventsMap, DefaultEventsM
     }
     const clientId = room.server.authToId[socket.data.sessionAuth] as string;
     socket.join([code, clientId]);
+    socket.data.roomCode = code;
+    markRoomActive(code);
 
     // validate name
     let desiredName = name;

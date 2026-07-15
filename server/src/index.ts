@@ -21,6 +21,7 @@ import { canonicalDecks } from "./data/decks/index.js";
 import { setupStartGameHandler } from "./socket/handlers/startGame.js";
 import { setupStopGameHandler } from "./socket/handlers/stopGame.js";
 import { setupToggleOmnipotentSpectator } from "./socket/handlers/toggleOmnipotentSpectator.js";
+import { scheduleRoomCleanupIfIdle } from "./socket/roomService.js";
 
 // Server initialization
 console.log("Starting server...");
@@ -69,7 +70,7 @@ app.post("/api/create-room", (req, res) => {
   if (req.body.name === "Seven" && !rooms["BUNE"]) {
     roomCode = "BUNE";
   }
-  rooms[roomCode] = {
+  const room: Room = rooms[roomCode] = {
     server: {
       code: roomCode,
       players: [  ],
@@ -84,6 +85,7 @@ app.post("/api/create-room", (req, res) => {
     },
     clients: []
   };
+  scheduleRoomCleanupIfIdle(roomCode, room);
   res.json({ code: roomCode });
 });
 
@@ -134,6 +136,20 @@ io.on("connection", (socket) => {
   setupToggleOmnipotentSpectator(socket);
   setupStartGameHandler(socket);
   setupStopGameHandler(socket);
+
+  socket.on("disconnect", () => {
+    const roomCode = socket.data.roomCode as string | undefined;
+    if (!roomCode) {
+      return;
+    }
+
+    const room = rooms[roomCode];
+    if (!room) {
+      return;
+    }
+
+    scheduleRoomCleanupIfIdle(roomCode, room);
+  });
 });
 
 const clientDistPath = path.join(__dirname, "../../client/dist");
