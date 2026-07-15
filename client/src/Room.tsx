@@ -364,6 +364,11 @@ export default function Room(props: RoomProps) {
                                             value={newName}
                                             disabled={!isSpectator && gameStarted}
                                             onChange={e => setNewName(e.target.value)}
+                                            onBlur={e => {
+                                                if (isSpectator || !gameStarted) {
+                                                    props.onChangeName(e.currentTarget.value);
+                                                }
+                                            }}
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter' && (isSpectator || !gameStarted)) {
                                                     props.onChangeName(e.currentTarget.value);
