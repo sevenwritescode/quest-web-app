@@ -410,21 +410,21 @@ export default function Room(props: RoomProps) {
             }
         }
 
-        const goodWins = runningGoodWins;
-        const evilWins = runningEvilWins;
-        const goodWon = goodWins === goodWinTarget;
-        const evilWon = evilWins === evilWinTarget;
-
-        if (goodWon === evilWon) {
-            return { error: `Exactly one team must reach its target wins (Good: ${goodWinTarget}, Evil: ${evilWinTarget}).` };
-        }
-
         if (clinchedQuestNumber === undefined) {
             return { error: `A team must reach the quest-win threshold (Good: ${goodWinTarget}, Evil: ${evilWinTarget}).` };
         }
 
         if (questCount !== clinchedQuestNumber) {
             return { error: 'Quests cannot continue after a team has reached the quest-win threshold.' };
+        }
+
+        const goodWins = runningGoodWins;
+        const evilWins = runningEvilWins;
+        const goodWon = goodWins >= goodWinTarget;
+        const evilWon = evilWins >= evilWinTarget;
+
+        if (goodWon === evilWon) {
+            return { error: `Exactly one team must reach its target wins (Good: ${goodWinTarget}, Evil: ${evilWinTarget}).` };
         }
 
         const filledAmuletIndexes = amuletRows
