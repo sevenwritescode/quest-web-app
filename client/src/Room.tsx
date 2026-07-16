@@ -956,7 +956,7 @@ export default function Room(props: RoomProps) {
                         </button>
                     </div>
                     <div className="settings-row record-secret-row">
-                        <span className="settings-label">hostSecret</span>
+                        <span className="settings-label">Host Secret</span>
                         <input
                             className="settings-input"
                             type="password"
@@ -964,7 +964,7 @@ export default function Room(props: RoomProps) {
                             name="hostSecret"
                             value={hostSecretInput}
                             onChange={e => setHostSecretInput(e.target.value)}
-                            placeholder="Required for Detailed"
+                            placeholder="Required for Detailed Record"
                         />
                     </div>
                     <div className="detailed-section-title">Type of Game Record</div>
@@ -984,8 +984,8 @@ export default function Room(props: RoomProps) {
                     </div>
                     {selectedRecordType === 'detailed' && (
                         <>
-                            <div className="detailed-section-title">Detailed Game Record</div>
-                            <div className="detailed-section-title">Quests</div>
+                            <div className="record-divider" aria-hidden="true" />
+                            <div className="detailed-section-title">Leaders</div>
                             <div className="detailed-grid">
                                 {Array.from({ length: 5 }).map((_, idx) => (
                                     <div className="quest-row" key={`quest-${idx}`}>
@@ -1014,30 +1014,32 @@ export default function Room(props: RoomProps) {
                                                 </option>
                                             ))}
                                         </select>
-                                        <button
-                                            className="team-image-button quest-outcome-button"
-                                            onClick={() => {
-                                                setQuestOutcomes(prev => {
-                                                    const next = [...prev];
-                                                    next[idx] = prev[idx] === 'Good' ? undefined : 'Good';
-                                                    return next;
-                                                });
-                                            }}
-                                        >
-                                            <img src={goodAllegianceImg} alt="Good quest" className={questOutcomes[idx] === 'Good' ? '' : 'dimmed'} />
-                                        </button>
-                                        <button
-                                            className="team-image-button quest-outcome-button"
-                                            onClick={() => {
-                                                setQuestOutcomes(prev => {
-                                                    const next = [...prev];
-                                                    next[idx] = prev[idx] === 'Evil' ? undefined : 'Evil';
-                                                    return next;
-                                                });
-                                            }}
-                                        >
-                                            <img src={evilAllegianceImg} alt="Evil quest" className={questOutcomes[idx] === 'Evil' ? '' : 'dimmed'} />
-                                        </button>
+                                        <div className="quest-outcome-group">
+                                            <button
+                                                className="team-image-button quest-outcome-button"
+                                                onClick={() => {
+                                                    setQuestOutcomes(prev => {
+                                                        const next = [...prev];
+                                                        next[idx] = prev[idx] === 'Good' ? undefined : 'Good';
+                                                        return next;
+                                                    });
+                                                }}
+                                            >
+                                                <img src={goodAllegianceImg} alt="Good quest" className={questOutcomes[idx] === 'Good' ? '' : 'dimmed'} />
+                                            </button>
+                                            <button
+                                                className="team-image-button quest-outcome-button"
+                                                onClick={() => {
+                                                    setQuestOutcomes(prev => {
+                                                        const next = [...prev];
+                                                        next[idx] = prev[idx] === 'Evil' ? undefined : 'Evil';
+                                                        return next;
+                                                    });
+                                                }}
+                                            >
+                                                <img src={evilAllegianceImg} alt="Evil quest" className={questOutcomes[idx] === 'Evil' ? '' : 'dimmed'} />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
