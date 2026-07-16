@@ -56,12 +56,11 @@ export default function Room(props: RoomProps) {
     const showDeckEditor = modalStack.includes('deckEditor');
     const showConfirmStop = modalStack.includes('confirmStop');
     const showRecordSummary = modalStack.includes('recordSummary');
-    const showDetailedRecord = modalStack.includes('detailedRecord');
-    const topModal = modalStack.length > 0 ? modalStack[modalStack.length - 1] : undefined;
     const [deckEditorMode, setDeckEditorMode] = useState<'canonical' | 'json'>('canonical');
     const [deckEditorTarget, setDeckEditorTarget] = useState<'public' | 'secret'>('public');
     const deckKeys = Object.keys(canonicalDecks) as Array<keyof typeof canonicalDecks>;
     const [selectedWinningTeam, setSelectedWinningTeam] = useState<WinningTeam | undefined>(undefined);
+    const [selectedRecordType, setSelectedRecordType] = useState<'simple' | 'detailed' | undefined>(undefined);
     const [hostSecretInput, setHostSecretInput] = useState('');
     const [stopConfirmedAtMs, setStopConfirmedAtMs] = useState<number | undefined>(undefined);
     const [questLeaders, setQuestLeaders] = useState<Array<string | undefined>>([undefined, undefined, undefined, undefined, undefined]);
@@ -123,6 +122,7 @@ export default function Room(props: RoomProps) {
 
     const resetRecordingForms = () => {
         setSelectedWinningTeam(undefined);
+        setSelectedRecordType(undefined);
         setStopConfirmedAtMs(undefined);
         setQuestLeaders([props.payload.firstLeaderId, undefined, undefined, undefined, undefined]);
         setQuestOutcomes([undefined, undefined, undefined, undefined, undefined]);
@@ -131,14 +131,14 @@ export default function Room(props: RoomProps) {
     };
 
     useEffect(() => {
-        if (!showDetailedRecord) {
+        if (showRecordSummary) {
             setQuestLeaders(prev => {
                 const next = [...prev];
                 next[0] = props.payload.firstLeaderId;
                 return next;
             });
         }
-    }, [props.payload.firstLeaderId, showDetailedRecord]);
+    }, [props.payload.firstLeaderId, showRecordSummary]);
 
     useEffect(() => {
         if (showSettingsModal) {
@@ -172,9 +172,6 @@ export default function Room(props: RoomProps) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                if (topModal === 'detailedRecord') {
-                    return;
-                }
                 if (modalStack.length > 0) {
                     popModal();
                 } else if (displayQRCode) {
@@ -190,7 +187,7 @@ export default function Room(props: RoomProps) {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     // re-run to capture latest modalStack and display flags
-    }, [topModal, modalStack, displayQRCode, displayLog, displayKnowledge]);
+    }, [modalStack, displayQRCode, displayLog, displayKnowledge]);
 
     useEffect(() => {
         if (displayLog && logRef.current) {
@@ -309,14 +306,45 @@ export default function Room(props: RoomProps) {
         };
     };
 
-    const submitStopWithoutDetailed = () => {
-        const payload = buildRecordingPayload();
-        if (!payload) {
-            showSharedError('Select a winning team before dismissing.');
+    const submitStopWithSelectedRecordType = () => {
+        if (!selectedWinningTeam) {
+            showSharedError('Select a winning team first.');
             return;
         }
 
-        props.onStopGame(payload);
+        if (!selectedRecordType) {
+            showSharedError('Select a game record type first.');
+            return;
+        }
+
+        const payload = buildRecordingPayload();
+        if (!payload) {
+            showSharedError('Winning team and confirm timestamp are required.');
+            return;
+        }
+
+        if (selectedRecordType === 'simple') {
+            props.onStopGame(payload);
+            setModalStack([]);
+            resetRecordingForms();
+            return;
+        }
+
+        if (hostSecretInput.trim() === '') {
+            showSharedError('hostSecret is required for detailed record.');
+            return;
+        }
+
+        const result = validateAndBuildDetailedRecord();
+        if (result.error) {
+            showSharedError(result.error);
+            return;
+        }
+
+        props.onStopGame({
+            ...payload,
+            detailedRecord: result.detailedRecord,
+        });
         setModalStack([]);
         resetRecordingForms();
     };
@@ -936,205 +964,176 @@ export default function Room(props: RoomProps) {
                             name="hostSecret"
                             value={hostSecretInput}
                             onChange={e => setHostSecretInput(e.target.value)}
-                            placeholder="Optional for Dismiss"
+                            placeholder="Required for Detailed"
                         />
                     </div>
-                    <div className="confirm-buttons summary-buttons">
+                    <div className="detailed-section-title">Type of Game Record</div>
+                    <div className="team-select-row record-type-row">
                         <button
-                            className="only-button gray"
-                            onClick={submitStopWithoutDetailed}
+                            className={`team-image-button record-type-button ${selectedRecordType === 'simple' ? 'selected' : ''}`}
+                            onClick={() => setSelectedRecordType('simple')}
                         >
-                            Dismiss
+                            <span className={selectedRecordType === 'simple' ? '' : 'dimmed'}>Simple</span>
                         </button>
                         <button
-                            className="only-button green"
-                            onClick={() => {
-                                if (!selectedWinningTeam) {
-                                    showSharedError('Select a winning team first.');
-                                    return;
-                                }
-                                if (hostSecretInput.trim() === '') {
-                                    showSharedError('hostSecret is required for detailed record.');
-                                    return;
-                                }
-                                pushModal('detailedRecord');
-                            }}
+                            className={`team-image-button record-type-button ${selectedRecordType === 'detailed' ? 'selected' : ''}`}
+                            onClick={() => setSelectedRecordType('detailed')}
                         >
-                            Create Detailed Game Record
+                            <span className={selectedRecordType === 'detailed' ? '' : 'dimmed'}>Detailed</span>
                         </button>
                     </div>
-                </div>
-            </div>
-        )}
-
-        {showDetailedRecord && (
-            <div className="confirm-overlay detailed-record-overlay">
-                <div className="detailed-record-modal" onClick={e => e.stopPropagation()}>
-                    <div className="confirm-text">Detailed Game Record</div>
-                    <div className="detailed-section-title">Quests</div>
-                    <div className="detailed-grid">
-                        {Array.from({ length: 5 }).map((_, idx) => (
-                            <div className="quest-row" key={`quest-${idx}`}>
-                                <div className="quest-label">Quest {idx + 1}</div>
-                                <select
-                                    className="detailed-select"
-                                    disabled={idx === 0}
-                                    value={questLeaders[idx] ?? ''}
-                                    onChange={e => {
-                                        const value = e.target.value === '' ? undefined : e.target.value;
-                                        setQuestLeaders(prev => {
-                                            const next = [...prev];
-                                            next[idx] = value;
-                                            return next;
-                                        });
-                                    }}
-                                >
-                                    <option value="">-</option>
-                                    {activePlayers.map(player => (
-                                        <option
-                                            key={`quest-${idx}-${player.id}`}
-                                            value={player.id}
-                                            disabled={isLeaderDisabledOption(player.id, idx)}
+                    {selectedRecordType === 'detailed' && (
+                        <>
+                            <div className="detailed-section-title">Detailed Game Record</div>
+                            <div className="detailed-section-title">Quests</div>
+                            <div className="detailed-grid">
+                                {Array.from({ length: 5 }).map((_, idx) => (
+                                    <div className="quest-row" key={`quest-${idx}`}>
+                                        <div className="quest-label">Quest {idx + 1}</div>
+                                        <select
+                                            className="detailed-select"
+                                            disabled={idx === 0}
+                                            value={questLeaders[idx] ?? ''}
+                                            onChange={e => {
+                                                const value = e.target.value === '' ? undefined : e.target.value;
+                                                setQuestLeaders(prev => {
+                                                    const next = [...prev];
+                                                    next[idx] = value;
+                                                    return next;
+                                                });
+                                            }}
                                         >
-                                            {player.name || 'Anonymous'}
-                                        </option>
-                                    ))}
-                                </select>
-                                <button
-                                    className="team-image-button quest-outcome-button"
-                                    onClick={() => {
-                                        setQuestOutcomes(prev => {
-                                            const next = [...prev];
-                                            next[idx] = prev[idx] === 'Good' ? undefined : 'Good';
-                                            return next;
-                                        });
-                                    }}
-                                >
-                                    <img src={goodAllegianceImg} alt="Good quest" className={questOutcomes[idx] === 'Good' ? '' : 'dimmed'} />
-                                </button>
-                                <button
-                                    className="team-image-button quest-outcome-button"
-                                    onClick={() => {
-                                        setQuestOutcomes(prev => {
-                                            const next = [...prev];
-                                            next[idx] = prev[idx] === 'Evil' ? undefined : 'Evil';
-                                            return next;
-                                        });
-                                    }}
-                                >
-                                    <img src={evilAllegianceImg} alt="Evil quest" className={questOutcomes[idx] === 'Evil' ? '' : 'dimmed'} />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="detailed-section-title">Amulets</div>
-                    <div className="detailed-grid">
-                        {Array.from({ length: 3 }).map((_, idx) => (
-                            <div className="amulet-row" key={`amulet-${idx}`}>
-                                <img src={amuletImg} alt="Amulet" className="amulet-icon" />
-                                <select
-                                    className="detailed-select"
-                                    value={amuletRows[idx].amuletRecipientId ?? ''}
-                                    onChange={e => {
-                                        const value = e.target.value === '' ? undefined : e.target.value;
-                                        setAmuletRows(prev => {
-                                            const next = [...prev];
-                                            next[idx] = { ...next[idx], amuletRecipientId: value };
-                                            return next;
-                                        });
-                                    }}
-                                >
-                                    <option value="">-</option>
-                                    {activePlayers.map(player => (
-                                        <option
-                                            key={`amulet-${idx}-${player.id}`}
-                                            value={player.id}
-                                            disabled={isAmuletDisabledOption(player.id, idx)}
+                                            <option value="">-</option>
+                                            {activePlayers.map(player => (
+                                                <option
+                                                    key={`quest-${idx}-${player.id}`}
+                                                    value={player.id}
+                                                    disabled={isLeaderDisabledOption(player.id, idx)}
+                                                >
+                                                    {player.name || 'Anonymous'}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            className="team-image-button quest-outcome-button"
+                                            onClick={() => {
+                                                setQuestOutcomes(prev => {
+                                                    const next = [...prev];
+                                                    next[idx] = prev[idx] === 'Good' ? undefined : 'Good';
+                                                    return next;
+                                                });
+                                            }}
                                         >
-                                            {player.name || 'Anonymous'}
-                                        </option>
-                                    ))}
-                                </select>
-                                <img src={fadedAmuletImg} alt="Faded Amulet" className="amulet-icon" />
-                                <select
-                                    className="detailed-select"
-                                    value={amuletRows[idx].fadedAmuletRecipientId ?? ''}
-                                    onChange={e => {
-                                        const value = e.target.value === '' ? undefined : e.target.value;
-                                        setAmuletRows(prev => {
-                                            const next = [...prev];
-                                            next[idx] = { ...next[idx], fadedAmuletRecipientId: value };
-                                            return next;
-                                        });
-                                    }}
-                                >
-                                    <option value="">-</option>
-                                    {activePlayers.map(player => (
-                                        <option
-                                            key={`faded-${idx}-${player.id}`}
-                                            value={player.id}
-                                            disabled={isFadedDisabledOption(player.id, idx)}
+                                            <img src={goodAllegianceImg} alt="Good quest" className={questOutcomes[idx] === 'Good' ? '' : 'dimmed'} />
+                                        </button>
+                                        <button
+                                            className="team-image-button quest-outcome-button"
+                                            onClick={() => {
+                                                setQuestOutcomes(prev => {
+                                                    const next = [...prev];
+                                                    next[idx] = prev[idx] === 'Evil' ? undefined : 'Evil';
+                                                    return next;
+                                                });
+                                            }}
                                         >
-                                            {player.name || 'Anonymous'}
-                                        </option>
-                                    ))}
-                                </select>
+                                            <img src={evilAllegianceImg} alt="Evil quest" className={questOutcomes[idx] === 'Evil' ? '' : 'dimmed'} />
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
 
-                    {evilWinsForBranch === 3 && (
-                        <div className="end-game-branch-wrap">
-                            <div className="detailed-section-title">End Game Branch</div>
-                            <div className="confirm-buttons">
-                                <button
-                                    className={`only-button ${endGameBranch === 'Pointing Phase' ? 'green' : 'gray'}`}
-                                    onClick={() => {
-                                        setEndGameBranch('Pointing Phase');
-                                    }}
-                                >
-                                    Pointing Phase
-                                </button>
-                                <button
-                                    className={`only-button ${endGameBranch === 'Blind Hunter Phase' ? 'green' : 'gray'}`}
-                                    onClick={() => {
-                                        setEndGameBranch('Blind Hunter Phase');
-                                    }}
-                                >
-                                    Blind Hunter Phase
-                                </button>
+                            <div className="detailed-section-title">Amulets</div>
+                            <div className="detailed-grid">
+                                {Array.from({ length: 3 }).map((_, idx) => (
+                                    <div className="amulet-row" key={`amulet-${idx}`}>
+                                        <img src={amuletImg} alt="Amulet" className="amulet-icon" />
+                                        <select
+                                            className="detailed-select"
+                                            value={amuletRows[idx].amuletRecipientId ?? ''}
+                                            onChange={e => {
+                                                const value = e.target.value === '' ? undefined : e.target.value;
+                                                setAmuletRows(prev => {
+                                                    const next = [...prev];
+                                                    next[idx] = { ...next[idx], amuletRecipientId: value };
+                                                    return next;
+                                                });
+                                            }}
+                                        >
+                                            <option value="">-</option>
+                                            {activePlayers.map(player => (
+                                                <option
+                                                    key={`amulet-${idx}-${player.id}`}
+                                                    value={player.id}
+                                                    disabled={isAmuletDisabledOption(player.id, idx)}
+                                                >
+                                                    {player.name || 'Anonymous'}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <img src={fadedAmuletImg} alt="Faded Amulet" className="amulet-icon" />
+                                        <select
+                                            className="detailed-select"
+                                            value={amuletRows[idx].fadedAmuletRecipientId ?? ''}
+                                            onChange={e => {
+                                                const value = e.target.value === '' ? undefined : e.target.value;
+                                                setAmuletRows(prev => {
+                                                    const next = [...prev];
+                                                    next[idx] = { ...next[idx], fadedAmuletRecipientId: value };
+                                                    return next;
+                                                });
+                                            }}
+                                        >
+                                            <option value="">-</option>
+                                            {activePlayers.map(player => (
+                                                <option
+                                                    key={`faded-${idx}-${player.id}`}
+                                                    value={player.id}
+                                                    disabled={isFadedDisabledOption(player.id, idx)}
+                                                >
+                                                    {player.name || 'Anonymous'}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
+
+                            {evilWinsForBranch === 3 && (
+                                <div className="end-game-branch-wrap">
+                                    <div className="detailed-section-title">End Game Branch</div>
+                                    <div className="confirm-buttons">
+                                        <button
+                                            className={`only-button ${endGameBranch === 'Pointing Phase' ? 'green' : 'gray'}`}
+                                            onClick={() => {
+                                                setEndGameBranch('Pointing Phase');
+                                            }}
+                                        >
+                                            Pointing Phase
+                                        </button>
+                                        <button
+                                            className={`only-button ${endGameBranch === 'Blind Hunter Phase' ? 'green' : 'gray'}`}
+                                            onClick={() => {
+                                                setEndGameBranch('Blind Hunter Phase');
+                                            }}
+                                        >
+                                            Blind Hunter Phase
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
 
-                    <div className="confirm-buttons detailed-submit-row">
-                        <button
-                            className="only-button green"
-                            onClick={() => {
-                                const payload = buildRecordingPayload();
-                                if (!payload) {
-                                    showSharedError('Winning team and confirm timestamp are required.');
-                                    return;
-                                }
-
-                                const result = validateAndBuildDetailedRecord();
-                                if (result.error) {
-                                    showSharedError(result.error);
-                                    return;
-                                }
-
-                                props.onStopGame({
-                                    ...payload,
-                                    detailedRecord: result.detailedRecord,
-                                });
-                                setModalStack([]);
-                                resetRecordingForms();
-                            }}
-                        >
-                            Submit
-                        </button>
-                    </div>
+                    {selectedRecordType && (
+                        <div className="confirm-buttons detailed-submit-row">
+                            <button
+                                className="only-button green"
+                                onClick={submitStopWithSelectedRecordType}
+                            >
+                                Submit
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         )}

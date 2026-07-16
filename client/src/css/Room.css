@@ -81,6 +81,23 @@
 .summary-buttons {
     margin-top: 0.25rem;
 }
+.record-type-row {
+    margin-bottom: 0.25rem;
+}
+.record-type-button {
+    min-width: 120px;
+    padding: 0.55rem 0.9rem;
+}
+.record-type-button span {
+    display: block;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+}
+.record-type-button .dimmed {
+    opacity: 0.5;
+    filter: none;
+}
 .detailed-record-overlay {
     z-index: 5200;
 }
@@ -161,7 +178,7 @@
   transition-property: opacity; /* transition-opacity */
   font-family: monospace;
     font-size: 1rem;
-    z-index: 4000;
+    z-index: 7000;
 }
 /* Settings Modal Styles */
 .settings-overlay {
