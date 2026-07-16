@@ -57,7 +57,37 @@ export type DeckSettings = {
   deck: Deck,
   secretDeckEnabled: boolean,
   secretDeck: Deck,
-  omnipotentSpectators: boolean
+  omnipotentSpectators: boolean,
+  recordGamesEnabled: boolean
+}
+
+export type WinningTeam = "Good" | "Evil";
+
+export type EndGameBranch = "Pointing Phase" | "Blind Hunter Phase";
+
+export type DetailedQuestRecord = {
+  questNumber: 1 | 2 | 3 | 4 | 5,
+  leaderId: string,
+  outcome: WinningTeam,
+}
+
+export type DetailedAmuletRecord = {
+  index: 1 | 2 | 3,
+  amuletRecipientId: string,
+  fadedAmuletRecipientId: string,
+}
+
+export type DetailedGameRecord = {
+  quests: DetailedQuestRecord[],
+  amulets: DetailedAmuletRecord[],
+  endGameBranch?: EndGameBranch,
+}
+
+export type StopGameRecordingInput = {
+  winningTeam: WinningTeam,
+  hostSecret?: string,
+  confirmedStopAtMs: number,
+  detailedRecord?: DetailedGameRecord,
 }
 
 export function getEffectiveDeck(settings: DeckSettings): Deck {
@@ -86,8 +116,9 @@ export type RoomClientState = {
   firstLeaderId: string | undefined,
   gameInProgress: boolean,
   settings: {
-    omnipotentSpectators: boolean
+    omnipotentSpectators: boolean,
     deck: Deck,
+    recordGamesEnabled: boolean,
     secretDeckEnabled?: boolean,
     secretDeck?: Deck,
   }
@@ -131,6 +162,7 @@ export type RoomServerState = {
   hostId: string,
   firstLeaderId: string | undefined,
   gameInProgress: boolean, 
+  gameStartedAtMs: number | undefined,
   settings: DeckSettings
   // server only props
   authToId: Record<string,string>

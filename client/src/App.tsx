@@ -12,7 +12,7 @@ import Landing from './Landing'
 import Room from './Room';
 import { Navigate } from 'react-router-dom'
 import { io, type Socket } from 'socket.io-client';
-import type { Deck, LandingState, RoomClientState  } from "./types"
+import type { Deck, LandingState, RoomClientState, StopGameRecordingInput } from "./types"
 import { canonicalDecks } from './data/decks';
 
 const SESSION_AUTH_STORAGE_KEY = "quest.sessionAuth";
@@ -123,6 +123,7 @@ function RoomScreen() {
        gameInProgress: false,
        settings: {
         omnipotentSpectators: true, 
+        recordGamesEnabled: true,
         deck: canonicalDecks.DirectorsCut7Player
       },
       log: []
@@ -360,13 +361,22 @@ function RoomScreen() {
     sock.emit("startGame", { code }); 
   }
 
-  const doStopGame = () => {
+  const doStopGame = (recording?: StopGameRecordingInput) => {
     const sock = sockRef.current;
     if (!sock || sock.disconnected) {
       console.warn("socket not ready yet");
       return;
     }
-    sock.emit("stopGame", { code }); 
+    sock.emit("stopGame", { code, recording }); 
+  }
+
+  const doToggleRecordGames = () => {
+    const sock = sockRef.current;
+    if (!sock || sock.disconnected) {
+      console.warn("socket not ready yet");
+      return;
+    }
+    sock.emit("toggleRecordGames", { code });
   }
   
   if (isLoading) {
@@ -386,6 +396,7 @@ function RoomScreen() {
       onToggleSpectator={doToggleSpectator}
       onReorderPlayers={doReorderPlayers}
       onToggleOmnipotentSpectators={doToggleOmnipotentSpectators}
+      onToggleRecordGames={doToggleRecordGames}
       onStartGame={doStartGame}
       onStopGame={doStopGame}
     />

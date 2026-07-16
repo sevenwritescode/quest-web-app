@@ -25,6 +25,7 @@ function cloneDeck(deck: Deck): Deck {
 
 function syncClientSettingsFromServer(room: Room, clientState: Room["clients"][number]) {
   clientState.settings.omnipotentSpectators = room.server.settings.omnipotentSpectators;
+  clientState.settings.recordGamesEnabled = room.server.settings.recordGamesEnabled;
   clientState.settings.deck = cloneDeck(room.server.settings.deck);
 
   if (clientState.clientId === room.server.hostId) {
@@ -219,6 +220,10 @@ export function updateDeckInRoomByTarget(room: Room, deck: Deck, target: "public
 }
 
 export function toggleSecretDeck(room: Room) {
+  if (!room.server.settings.secretDeckEnabled && room.server.settings.recordGamesEnabled) {
+    throw new Error("Secret Deck cannot be enabled while Record Games is enabled.");
+  }
+
   room.server.settings.secretDeckEnabled = !room.server.settings.secretDeckEnabled;
   for (const clientState of room.clients) {
     syncClientSettingsFromServer(room, clientState);
@@ -228,6 +233,24 @@ export function toggleSecretDeck(room: Room) {
     mes: room.server.settings.secretDeckEnabled
       ? "Secret Deck enabled."
       : "Secret Deck disabled.",
+    color: "gray"
+  });
+}
+
+export function toggleRecordGames(room: Room) {
+  if (!room.server.settings.recordGamesEnabled && room.server.settings.secretDeckEnabled) {
+    throw new Error("Record Games cannot be enabled while Secret Deck is enabled.");
+  }
+
+  room.server.settings.recordGamesEnabled = !room.server.settings.recordGamesEnabled;
+  for (const clientState of room.clients) {
+    clientState.settings.recordGamesEnabled = room.server.settings.recordGamesEnabled;
+  }
+
+  io.to(room.server.code).emit("logMessage", {
+    mes: room.server.settings.recordGamesEnabled
+      ? "Game recording enabled."
+      : "Game recording disabled.",
     color: "gray"
   });
 }
@@ -339,6 +362,7 @@ export function startGame(room: Room) {
   }
 
   room.server.gameInProgress = true; 
+  room.server.gameStartedAtMs = Date.now();
   io.to(room.server.code).emit("logMessage", { 
     mes: "Game Start! View Secret Info in the Knowledge Tab",
     color: "green"
@@ -381,6 +405,7 @@ export function stopGame(room: Room) {
   }
 
   room.server.gameInProgress = false; 
+  room.server.gameStartedAtMs = undefined;
   io.to(room.server.code).emit("logMessage", { 
     mes: "Game Stopped!",
     color: "red"
@@ -411,6 +436,7 @@ export function addNewClient(room: Room, clientId: string, name?: string) {
         })),
     settings: {
       omnipotentSpectators: room.server.settings.omnipotentSpectators,
+      recordGamesEnabled: room.server.settings.recordGamesEnabled,
       deck: cloneDeck(room.server.settings.deck),
       secretDeckEnabled: isHostClient ? room.server.settings.secretDeckEnabled : false,
       ...(isHostClient ? { secretDeck: cloneDeck(room.server.settings.secretDeck) } : {}),

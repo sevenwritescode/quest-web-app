@@ -22,6 +22,7 @@ import { setupStartGameHandler } from "./socket/handlers/startGame.js";
 import { setupStopGameHandler } from "./socket/handlers/stopGame.js";
 import { setupToggleOmnipotentSpectator } from "./socket/handlers/toggleOmnipotentSpectator.js";
 import { setupToggleSecretDeckHandler } from "./socket/handlers/toggleSecretDeck.js";
+import { setupToggleRecordGamesHandler } from "./socket/handlers/toggleRecordGamesHandler.js";
 import { scheduleRoomCleanupIfIdle } from "./socket/roomService.js";
 
 // Server initialization
@@ -78,8 +79,10 @@ app.post("/api/create-room", (req, res) => {
       hostId,
       firstLeaderId: undefined,
       gameInProgress: false,
+      gameStartedAtMs: undefined,
       settings: {
         omnipotentSpectators: true,
+        recordGamesEnabled: true,
         deck: canonicalDecks.DirectorsCut7Player,
         secretDeckEnabled: false,
         secretDeck: canonicalDecks.DirectorsCut7Player
@@ -138,6 +141,7 @@ io.on("connection", (socket) => {
   setupReorderPlayersHandler(socket);
   setupToggleOmnipotentSpectator(socket);
   setupToggleSecretDeckHandler(socket);
+  setupToggleRecordGamesHandler(socket);
   setupStartGameHandler(socket);
   setupStopGameHandler(socket);
 

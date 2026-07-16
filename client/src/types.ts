@@ -62,6 +62,35 @@ export type Deck = {
   items: DeckItem[]
 }
 
+export type WinningTeam = "Good" | "Evil";
+
+export type EndGameBranch = "Pointing Phase" | "Blind Hunter Phase";
+
+export type DetailedQuestRecord = {
+  questNumber: 1 | 2 | 3 | 4 | 5,
+  leaderId: string,
+  outcome: WinningTeam,
+}
+
+export type DetailedAmuletRecord = {
+  index: 1 | 2 | 3,
+  amuletRecipientId: string,
+  fadedAmuletRecipientId: string,
+}
+
+export type DetailedGameRecord = {
+  quests: DetailedQuestRecord[],
+  amulets: DetailedAmuletRecord[],
+  endGameBranch?: EndGameBranch,
+}
+
+export type StopGameRecordingInput = {
+  winningTeam: WinningTeam,
+  hostSecret?: string,
+  confirmedStopAtMs: number,
+  detailedRecord?: DetailedGameRecord,
+}
+
 export function numberOfPlayersForDeck(deck: Deck) {
   let count = 0;
   for (const deckItem of deck.items) {
@@ -87,6 +116,7 @@ export type RoomClientState = {
   settings: {
     omnipotentSpectators: boolean,
     deck: Deck,
+    recordGamesEnabled: boolean,
     secretDeckEnabled?: boolean,
     secretDeck?: Deck,
   }

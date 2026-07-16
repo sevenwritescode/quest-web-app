@@ -1,4 +1,11 @@
-import type { RoomClientState, Deck, RolePool } from './types';
+import type {
+    RoomClientState,
+    Deck,
+    RolePool,
+    StopGameRecordingInput,
+    WinningTeam,
+    EndGameBranch,
+} from './types';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult, DroppableProvided, DraggableProvided } from '@hello-pangea/dnd';
@@ -8,6 +15,10 @@ import gear_icon from './assets/icons/Gear_icon_svg.svg';
 import log_icon from './assets/icons/system-log-2.png';
 import knowledge_icon from './assets/icons/books-17.svg';
 import leaderImg from './assets/game_pieces/Leader.webp';
+import goodAllegianceImg from './assets/allegiances/Good.webp';
+import evilAllegianceImg from './assets/allegiances/Evil.webp';
+import amuletImg from './assets/game_pieces/Amulet.webp';
+import fadedAmuletImg from './assets/game_pieces/Faded_Amulet.webp';
 import { canonicalDecks } from "./data/decks";
 import QRCode from "react-qr-code";
 
@@ -25,7 +36,8 @@ interface RoomProps {
     onToggleSpectator: (playerId: string) => void,
     onReorderPlayers: (newOrder: string[]) => void,
     onStartGame: () => void,
-    onStopGame: () => void
+    onStopGame: (recording?: StopGameRecordingInput) => void,
+    onToggleRecordGames: () => void,
 }
 
 export default function Room(props: RoomProps) {
@@ -43,11 +55,23 @@ export default function Room(props: RoomProps) {
     const showSettingsModal = modalStack.includes('settings');
     const showDeckEditor = modalStack.includes('deckEditor');
     const showConfirmStop = modalStack.includes('confirmStop');
+    const showRecordSummary = modalStack.includes('recordSummary');
+    const showDetailedRecord = modalStack.includes('detailedRecord');
+    const topModal = modalStack.length > 0 ? modalStack[modalStack.length - 1] : undefined;
     const [deckEditorMode, setDeckEditorMode] = useState<'canonical' | 'json'>('canonical');
     const [deckEditorTarget, setDeckEditorTarget] = useState<'public' | 'secret'>('public');
     const deckKeys = Object.keys(canonicalDecks) as Array<keyof typeof canonicalDecks>;
-    
-    // Confirm Stop Game Modal
+    const [selectedWinningTeam, setSelectedWinningTeam] = useState<WinningTeam | undefined>(undefined);
+    const [hostSecretInput, setHostSecretInput] = useState('');
+    const [stopConfirmedAtMs, setStopConfirmedAtMs] = useState<number | undefined>(undefined);
+    const [questLeaders, setQuestLeaders] = useState<Array<string | undefined>>([undefined, undefined, undefined, undefined, undefined]);
+    const [questOutcomes, setQuestOutcomes] = useState<Array<WinningTeam | undefined>>([undefined, undefined, undefined, undefined, undefined]);
+    const [amuletRows, setAmuletRows] = useState<Array<{ amuletRecipientId?: string; fadedAmuletRecipientId?: string }>>([
+        {},
+        {},
+        {},
+    ]);
+    const [endGameBranch, setEndGameBranch] = useState<EndGameBranch | undefined>(undefined);
     
     const [selectedDeckKey, setSelectedDeckKey] = useState<keyof typeof canonicalDecks>("DirectorsCut7Player");
     const [customDeckJson, setCustomDeckJson] = useState('');
@@ -59,7 +83,13 @@ export default function Room(props: RoomProps) {
     const canUseSecretDeck = isHost && props.payload.players.find(p => p.id === props.payload.hostId)?.name === 'Seven';
     const secretDeckEnabled = props.payload.settings.secretDeckEnabled === true;
     const secretDeck = props.payload.settings.secretDeck ?? props.payload.settings.deck;
+    const recordGamesEnabled = props.payload.settings.recordGamesEnabled;
     const gameStarted = props.payload.gameInProgress;
+    const shouldRecordGame = recordGamesEnabled && !secretDeckEnabled;
+    const activePlayers = useMemo(
+        () => props.payload.players.filter(player => player.role !== 'Spectator'),
+        [props.payload.players]
+    );
     // Spectators retain client settings even during game
     const isSpectator = props.payload.players.find(p => p.id === props.payload.clientId)?.role === 'Spectator';
     // Helper to render deck preview
@@ -86,6 +116,30 @@ export default function Room(props: RoomProps) {
     const [newName, setNewName] = useState<string>(
         props.payload.players.find(p => p.id === props.payload.clientId)?.name || ''
     );
+
+    const showSharedError = (message: string) => {
+        props.doPayloadChange({ error: message });
+    };
+
+    const resetRecordingForms = () => {
+        setSelectedWinningTeam(undefined);
+        setStopConfirmedAtMs(undefined);
+        setQuestLeaders([props.payload.firstLeaderId, undefined, undefined, undefined, undefined]);
+        setQuestOutcomes([undefined, undefined, undefined, undefined, undefined]);
+        setAmuletRows([{}, {}, {}]);
+        setEndGameBranch(undefined);
+    };
+
+    useEffect(() => {
+        if (!showDetailedRecord) {
+            setQuestLeaders(prev => {
+                const next = [...prev];
+                next[0] = props.payload.firstLeaderId;
+                return next;
+            });
+        }
+    }, [props.payload.firstLeaderId, showDetailedRecord]);
+
     useEffect(() => {
         if (showSettingsModal) {
             const curr = props.payload.players.find(p => p.id === props.payload.clientId);
@@ -118,7 +172,9 @@ export default function Room(props: RoomProps) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                console.log(modalStack.length);
+                if (topModal === 'detailedRecord') {
+                    return;
+                }
                 if (modalStack.length > 0) {
                     popModal();
                 } else if (displayQRCode) {
@@ -134,7 +190,7 @@ export default function Room(props: RoomProps) {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     // re-run to capture latest modalStack and display flags
-    }, [modalStack, displayQRCode, displayLog, displayKnowledge]);
+    }, [topModal, modalStack, displayQRCode, displayLog, displayKnowledge]);
 
     useEffect(() => {
         if (displayLog && logRef.current) {
@@ -201,6 +257,181 @@ export default function Room(props: RoomProps) {
             clearTimeout(clearTimer);
         };
     }, [props.payload.log, displayLog]);
+
+    const isSelectedElsewhere = (values: Array<string | undefined>, value: string, currentIndex: number) =>
+        values.some((entry, idx) => idx !== currentIndex && entry === value);
+
+    const getAmuletJobs = () => amuletRows.map(row => row.amuletRecipientId);
+
+    const isLeaderDisabledOption = (playerId: string, rowIndex: number) => {
+        if (isSelectedElsewhere(questLeaders, playerId, rowIndex)) {
+            return true;
+        }
+        return getAmuletJobs().some(amuletId => amuletId === playerId);
+    };
+
+    const isAmuletDisabledOption = (playerId: string, rowIndex: number) => {
+        if (questLeaders.some(leaderId => leaderId === playerId)) {
+            return true;
+        }
+
+        return getAmuletJobs().some((amuletId, idx) => idx !== rowIndex && amuletId === playerId);
+    };
+
+    const isFadedDisabledOption = (playerId: string, rowIndex: number) => {
+        const pickedAsFadedElsewhere = amuletRows.some((row, idx) => idx !== rowIndex && row.fadedAmuletRecipientId === playerId);
+        if (pickedAsFadedElsewhere) {
+            return true;
+        }
+
+        const hasAmuletAtOrBeforeRow = amuletRows.some((row, idx) => idx <= rowIndex && row.amuletRecipientId === playerId);
+        if (hasAmuletAtOrBeforeRow) {
+            return true;
+        }
+
+        if (amuletRows[rowIndex].amuletRecipientId === playerId) {
+            return true;
+        }
+
+        return false;
+    };
+
+    const buildRecordingPayload = (detailedRecord?: StopGameRecordingInput['detailedRecord']): StopGameRecordingInput | undefined => {
+        if (selectedWinningTeam === undefined || stopConfirmedAtMs === undefined) {
+            return undefined;
+        }
+
+        return {
+            winningTeam: selectedWinningTeam,
+            confirmedStopAtMs: stopConfirmedAtMs,
+            hostSecret: hostSecretInput.trim() === '' ? undefined : hostSecretInput.trim(),
+            detailedRecord,
+        };
+    };
+
+    const submitStopWithoutDetailed = () => {
+        const payload = buildRecordingPayload();
+        if (!payload) {
+            showSharedError('Select a winning team before dismissing.');
+            return;
+        }
+
+        props.onStopGame(payload);
+        setModalStack([]);
+        resetRecordingForms();
+    };
+
+    const validateAndBuildDetailedRecord = () => {
+        const filledQuestIndexes = questLeaders
+            .map((leaderId, idx) => ({ idx, leaderId }))
+            .filter(entry => entry.leaderId !== undefined)
+            .map(entry => entry.idx);
+
+        if (questLeaders[0] === undefined) {
+            return { error: 'Quest 1 leader is missing.' };
+        }
+
+        for (let i = 0; i < filledQuestIndexes.length; i += 1) {
+            if (filledQuestIndexes[i] !== i) {
+                return { error: 'Quest rows must be filled in order without gaps.' };
+            }
+        }
+
+        const questCount = filledQuestIndexes.length;
+        if (questCount === 0) {
+            return { error: 'At least Quest 1 must be filled.' };
+        }
+
+        const uniqueLeaders = new Set<string>();
+        for (let i = 0; i < questCount; i += 1) {
+            const leaderId = questLeaders[i];
+            const outcome = questOutcomes[i];
+            if (!leaderId) {
+                return { error: `Quest ${i + 1} must have a leader.` };
+            }
+            if (!outcome) {
+                return { error: `Quest ${i + 1} must have a Good/Evil result.` };
+            }
+            if (uniqueLeaders.has(leaderId)) {
+                return { error: 'A player cannot lead more than one quest.' };
+            }
+            uniqueLeaders.add(leaderId);
+        }
+
+        const goodWins = questOutcomes.slice(0, questCount).filter(outcome => outcome === 'Good').length;
+        const evilWins = questOutcomes.slice(0, questCount).filter(outcome => outcome === 'Evil').length;
+        if ((goodWins === 3) === (evilWins === 3)) {
+            return { error: 'Exactly one team must have exactly 3 quest wins.' };
+        }
+
+        const filledAmuletIndexes = amuletRows
+            .map((row, idx) => ({ idx, hasData: Boolean(row.amuletRecipientId || row.fadedAmuletRecipientId) }))
+            .filter(entry => entry.hasData)
+            .map(entry => entry.idx);
+
+        for (let i = 0; i < filledAmuletIndexes.length; i += 1) {
+            if (filledAmuletIndexes[i] !== i) {
+                return { error: 'Amulet rows must be filled in order without gaps.' };
+            }
+        }
+
+        const amuletRecipients = new Set<string>();
+        const fadedRecipients = new Set<string>();
+
+        for (let i = 0; i < filledAmuletIndexes.length; i += 1) {
+            const row = amuletRows[i];
+            if (!row.amuletRecipientId || !row.fadedAmuletRecipientId) {
+                return { error: `Amulet row ${i + 1} must have both amulet and faded amulet recipients.` };
+            }
+
+            if (uniqueLeaders.has(row.amuletRecipientId)) {
+                return { error: 'Amulet recipients cannot also be quest leaders.' };
+            }
+
+            if (amuletRecipients.has(row.amuletRecipientId)) {
+                return { error: 'A player cannot receive more than one amulet.' };
+            }
+
+            if (fadedRecipients.has(row.fadedAmuletRecipientId)) {
+                return { error: 'A player cannot receive more than one faded amulet.' };
+            }
+
+            for (let prior = 0; prior <= i; prior += 1) {
+                if (amuletRows[prior].amuletRecipientId === row.fadedAmuletRecipientId) {
+                    return { error: 'Faded amulet recipient cannot already have received an amulet by that row.' };
+                }
+            }
+
+            amuletRecipients.add(row.amuletRecipientId);
+            fadedRecipients.add(row.fadedAmuletRecipientId);
+        }
+
+        if (evilWins === 3 && !endGameBranch) {
+            return { error: 'Select End Game Branch when Evil has 3 quest wins.' };
+        }
+
+        const detailedRecord: NonNullable<StopGameRecordingInput['detailedRecord']> = {
+            quests: questLeaders.slice(0, questCount).map((leaderId, idx) => ({
+                questNumber: (idx + 1) as 1 | 2 | 3 | 4 | 5,
+                leaderId: leaderId!,
+                outcome: questOutcomes[idx]!,
+            })),
+            amulets: amuletRows
+                .slice(0, filledAmuletIndexes.length)
+                .map((row, idx) => ({
+                    index: (idx + 1) as 1 | 2 | 3,
+                    amuletRecipientId: row.amuletRecipientId!,
+                    fadedAmuletRecipientId: row.fadedAmuletRecipientId!,
+                })),
+            ...(evilWins === 3 ? { endGameBranch } : {}),
+        };
+
+        return { detailedRecord };
+    };
+
+    const contiguousQuestCount = questLeaders.findIndex(leaderId => leaderId === undefined);
+    const questCountForBranch = contiguousQuestCount === -1 ? questLeaders.length : contiguousQuestCount;
+    const evilWinsForBranch = questOutcomes.slice(0, questCountForBranch).filter(outcome => outcome === 'Evil').length;
 
     return (<>
 
@@ -412,7 +643,10 @@ export default function Room(props: RoomProps) {
                                         <button
                                             className="only-button red"
                                             disabled={!isHost}
-                                            onClick={() => pushModal('confirmStop')}
+                                            onClick={() => {
+                                                resetRecordingForms();
+                                                pushModal('confirmStop');
+                                            }}
                                         >Stop Game</button>
                                     )}
                                 </div>
@@ -513,14 +747,25 @@ export default function Room(props: RoomProps) {
                                     />
                                 </div>
 
+                                <div className={`settings-row${(!isHost || secretDeckEnabled || gameStarted) ? ' disabled-row' : ''}`}>
+                                    <span className="settings-label">Record Games</span>
+                                    <input
+                                        className="settings-input"
+                                        type="checkbox"
+                                        disabled={!isHost || secretDeckEnabled || gameStarted}
+                                        checked={recordGamesEnabled}
+                                        onChange={() => props.onToggleRecordGames()}
+                                    />
+                                </div>
+
                                 {canUseSecretDeck && (
                                     <>
-                                        <div className={`settings-row${gameStarted ? ' disabled-row' : ''}`}>
+                                        <div className={`settings-row${(gameStarted || recordGamesEnabled) ? ' disabled-row' : ''}`}>
                                             <span className="settings-label">Secret Deck</span>
                                             <input
                                                 className="settings-input"
                                                 type="checkbox"
-                                                disabled={gameStarted}
+                                                disabled={gameStarted || recordGamesEnabled}
                                                 checked={secretDeckEnabled}
                                                 onChange={() => props.onToggleSecretDeck()}
                                             />
@@ -636,7 +881,259 @@ export default function Room(props: RoomProps) {
                     <div className="confirm-text">Are you sure you want to stop the game?</div>
                     <div className="confirm-buttons">
                         <button className="only-button gray" onClick={() => popModal()}>Cancel</button>
-                        <button className="only-button red" onClick={() => { props.onStopGame(); popModal(); }}>Stop Game</button>
+                        <button
+                            className="only-button red"
+                            onClick={() => {
+                                const confirmedAt = Date.now();
+                                setStopConfirmedAtMs(confirmedAt);
+                                popModal();
+                                if (!shouldRecordGame) {
+                                    props.onStopGame();
+                                    resetRecordingForms();
+                                    return;
+                                }
+                                pushModal('recordSummary');
+                            }}
+                        >
+                            Stop Game
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {showRecordSummary && (
+            <div className="confirm-overlay" onClick={() => {
+                popModal();
+                resetRecordingForms();
+            }}>
+                <div className="record-summary-modal" onClick={e => e.stopPropagation()}>
+                    <div className="confirm-text">Which team won the game?</div>
+                    <div className="team-select-row">
+                        <button
+                            className={`team-image-button ${selectedWinningTeam === 'Good' ? 'selected' : ''}`}
+                            onClick={() => {
+                                setSelectedWinningTeam('Good');
+                            }}
+                        >
+                            <img src={goodAllegianceImg} alt="Good team" className={selectedWinningTeam === 'Good' ? '' : 'dimmed'} />
+                        </button>
+                        <button
+                            className={`team-image-button ${selectedWinningTeam === 'Evil' ? 'selected' : ''}`}
+                            onClick={() => {
+                                setSelectedWinningTeam('Evil');
+                            }}
+                        >
+                            <img src={evilAllegianceImg} alt="Evil team" className={selectedWinningTeam === 'Evil' ? '' : 'dimmed'} />
+                        </button>
+                    </div>
+                    <div className="settings-row record-secret-row">
+                        <span className="settings-label">hostSecret</span>
+                        <input
+                            className="settings-input"
+                            type="password"
+                            autoComplete="current-password"
+                            name="hostSecret"
+                            value={hostSecretInput}
+                            onChange={e => setHostSecretInput(e.target.value)}
+                            placeholder="Optional for Dismiss"
+                        />
+                    </div>
+                    <div className="confirm-buttons summary-buttons">
+                        <button
+                            className="only-button gray"
+                            onClick={submitStopWithoutDetailed}
+                        >
+                            Dismiss
+                        </button>
+                        <button
+                            className="only-button green"
+                            onClick={() => {
+                                if (!selectedWinningTeam) {
+                                    showSharedError('Select a winning team first.');
+                                    return;
+                                }
+                                if (hostSecretInput.trim() === '') {
+                                    showSharedError('hostSecret is required for detailed record.');
+                                    return;
+                                }
+                                pushModal('detailedRecord');
+                            }}
+                        >
+                            Create Detailed Game Record
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {showDetailedRecord && (
+            <div className="confirm-overlay detailed-record-overlay">
+                <div className="detailed-record-modal" onClick={e => e.stopPropagation()}>
+                    <div className="confirm-text">Detailed Game Record</div>
+                    <div className="detailed-section-title">Quests</div>
+                    <div className="detailed-grid">
+                        {Array.from({ length: 5 }).map((_, idx) => (
+                            <div className="quest-row" key={`quest-${idx}`}>
+                                <div className="quest-label">Quest {idx + 1}</div>
+                                <select
+                                    className="detailed-select"
+                                    disabled={idx === 0}
+                                    value={questLeaders[idx] ?? ''}
+                                    onChange={e => {
+                                        const value = e.target.value === '' ? undefined : e.target.value;
+                                        setQuestLeaders(prev => {
+                                            const next = [...prev];
+                                            next[idx] = value;
+                                            return next;
+                                        });
+                                    }}
+                                >
+                                    <option value="">-</option>
+                                    {activePlayers.map(player => (
+                                        <option
+                                            key={`quest-${idx}-${player.id}`}
+                                            value={player.id}
+                                            disabled={isLeaderDisabledOption(player.id, idx)}
+                                        >
+                                            {player.name || 'Anonymous'}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    className="team-image-button quest-outcome-button"
+                                    onClick={() => {
+                                        setQuestOutcomes(prev => {
+                                            const next = [...prev];
+                                            next[idx] = prev[idx] === 'Good' ? undefined : 'Good';
+                                            return next;
+                                        });
+                                    }}
+                                >
+                                    <img src={goodAllegianceImg} alt="Good quest" className={questOutcomes[idx] === 'Good' ? '' : 'dimmed'} />
+                                </button>
+                                <button
+                                    className="team-image-button quest-outcome-button"
+                                    onClick={() => {
+                                        setQuestOutcomes(prev => {
+                                            const next = [...prev];
+                                            next[idx] = prev[idx] === 'Evil' ? undefined : 'Evil';
+                                            return next;
+                                        });
+                                    }}
+                                >
+                                    <img src={evilAllegianceImg} alt="Evil quest" className={questOutcomes[idx] === 'Evil' ? '' : 'dimmed'} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="detailed-section-title">Amulets</div>
+                    <div className="detailed-grid">
+                        {Array.from({ length: 3 }).map((_, idx) => (
+                            <div className="amulet-row" key={`amulet-${idx}`}>
+                                <img src={amuletImg} alt="Amulet" className="amulet-icon" />
+                                <select
+                                    className="detailed-select"
+                                    value={amuletRows[idx].amuletRecipientId ?? ''}
+                                    onChange={e => {
+                                        const value = e.target.value === '' ? undefined : e.target.value;
+                                        setAmuletRows(prev => {
+                                            const next = [...prev];
+                                            next[idx] = { ...next[idx], amuletRecipientId: value };
+                                            return next;
+                                        });
+                                    }}
+                                >
+                                    <option value="">-</option>
+                                    {activePlayers.map(player => (
+                                        <option
+                                            key={`amulet-${idx}-${player.id}`}
+                                            value={player.id}
+                                            disabled={isAmuletDisabledOption(player.id, idx)}
+                                        >
+                                            {player.name || 'Anonymous'}
+                                        </option>
+                                    ))}
+                                </select>
+                                <img src={fadedAmuletImg} alt="Faded Amulet" className="amulet-icon" />
+                                <select
+                                    className="detailed-select"
+                                    value={amuletRows[idx].fadedAmuletRecipientId ?? ''}
+                                    onChange={e => {
+                                        const value = e.target.value === '' ? undefined : e.target.value;
+                                        setAmuletRows(prev => {
+                                            const next = [...prev];
+                                            next[idx] = { ...next[idx], fadedAmuletRecipientId: value };
+                                            return next;
+                                        });
+                                    }}
+                                >
+                                    <option value="">-</option>
+                                    {activePlayers.map(player => (
+                                        <option
+                                            key={`faded-${idx}-${player.id}`}
+                                            value={player.id}
+                                            disabled={isFadedDisabledOption(player.id, idx)}
+                                        >
+                                            {player.name || 'Anonymous'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        ))}
+                    </div>
+
+                    {evilWinsForBranch === 3 && (
+                        <div className="end-game-branch-wrap">
+                            <div className="detailed-section-title">End Game Branch</div>
+                            <div className="confirm-buttons">
+                                <button
+                                    className={`only-button ${endGameBranch === 'Pointing Phase' ? 'green' : 'gray'}`}
+                                    onClick={() => {
+                                        setEndGameBranch('Pointing Phase');
+                                    }}
+                                >
+                                    Pointing Phase
+                                </button>
+                                <button
+                                    className={`only-button ${endGameBranch === 'Blind Hunter Phase' ? 'green' : 'gray'}`}
+                                    onClick={() => {
+                                        setEndGameBranch('Blind Hunter Phase');
+                                    }}
+                                >
+                                    Blind Hunter Phase
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="confirm-buttons detailed-submit-row">
+                        <button
+                            className="only-button green"
+                            onClick={() => {
+                                const payload = buildRecordingPayload();
+                                if (!payload) {
+                                    showSharedError('Winning team and confirm timestamp are required.');
+                                    return;
+                                }
+
+                                const result = validateAndBuildDetailedRecord();
+                                if (result.error) {
+                                    showSharedError(result.error);
+                                    return;
+                                }
+
+                                props.onStopGame({
+                                    ...payload,
+                                    detailedRecord: result.detailedRecord,
+                                });
+                                setModalStack([]);
+                                resetRecordingForms();
+                            }}
+                        >
+                            Submit
+                        </button>
                     </div>
                 </div>
             </div>
