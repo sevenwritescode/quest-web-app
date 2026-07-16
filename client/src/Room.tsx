@@ -386,10 +386,45 @@ export default function Room(props: RoomProps) {
             uniqueLeaders.add(leaderId);
         }
 
-        const goodWins = questOutcomes.slice(0, questCount).filter(outcome => outcome === 'Good').length;
-        const evilWins = questOutcomes.slice(0, questCount).filter(outcome => outcome === 'Evil').length;
-        if ((goodWins === 3) === (evilWins === 3)) {
-            return { error: 'Exactly one team must have exactly 3 quest wins.' };
+        const goodWinTarget = 3;
+        const evilWinTarget = activePlayers.length === 4 ? 2 : 3;
+
+        const questOutcomesInOrder = questOutcomes.slice(0, questCount);
+        let runningGoodWins = 0;
+        let runningEvilWins = 0;
+        let clinchedQuestNumber: number | undefined = undefined;
+
+        for (let i = 0; i < questOutcomesInOrder.length; i += 1) {
+            const outcome = questOutcomesInOrder[i];
+            if (outcome === 'Good') {
+                runningGoodWins += 1;
+            } else if (outcome === 'Evil') {
+                runningEvilWins += 1;
+            }
+
+            if (
+                clinchedQuestNumber === undefined &&
+                (runningGoodWins === goodWinTarget || runningEvilWins === evilWinTarget)
+            ) {
+                clinchedQuestNumber = i + 1;
+            }
+        }
+
+        const goodWins = runningGoodWins;
+        const evilWins = runningEvilWins;
+        const goodWon = goodWins === goodWinTarget;
+        const evilWon = evilWins === evilWinTarget;
+
+        if (goodWon === evilWon) {
+            return { error: `Exactly one team must reach its target wins (Good: ${goodWinTarget}, Evil: ${evilWinTarget}).` };
+        }
+
+        if (clinchedQuestNumber === undefined) {
+            return { error: `A team must reach the quest-win threshold (Good: ${goodWinTarget}, Evil: ${evilWinTarget}).` };
+        }
+
+        if (questCount !== clinchedQuestNumber) {
+            return { error: 'Quests cannot continue after a team has reached the quest-win threshold.' };
         }
 
         const filledAmuletIndexes = amuletRows
