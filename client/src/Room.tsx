@@ -350,6 +350,14 @@ export default function Room(props: RoomProps) {
     };
 
     const validateAndBuildDetailedRecord = () => {
+        for (let i = 0; i < questLeaders.length; i += 1) {
+            const hasLeader = questLeaders[i] !== undefined;
+            const hasOutcome = questOutcomes[i] !== undefined;
+            if (hasLeader !== hasOutcome) {
+                return { error: `Quest row ${i + 1} must have both leader and quest result.` };
+            }
+        }
+
         const filledQuestIndexes = questLeaders
             .map((leaderId, idx) => ({ idx, leaderId }))
             .filter(entry => entry.leaderId !== undefined)
@@ -495,6 +503,7 @@ export default function Room(props: RoomProps) {
     const contiguousQuestCount = questLeaders.findIndex(leaderId => leaderId === undefined);
     const questCountForBranch = contiguousQuestCount === -1 ? questLeaders.length : contiguousQuestCount;
     const evilWinsForBranch = questOutcomes.slice(0, questCountForBranch).filter(outcome => outcome === 'Evil').length;
+    const evilWinTargetForBranch = activePlayers.length === 4 ? 2 : 3;
 
     return (<>
 
@@ -1135,7 +1144,7 @@ export default function Room(props: RoomProps) {
                                 ))}
                             </div>
 
-                            {evilWinsForBranch === 3 && (
+                            {evilWinsForBranch >= evilWinTargetForBranch && (
                                 <div className="end-game-branch-wrap">
                                     <div className="detailed-section-title">End Game Branch</div>
                                     <div className="confirm-buttons">
