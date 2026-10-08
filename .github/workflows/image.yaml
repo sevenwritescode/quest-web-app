@@ -1,0 +1,15 @@
+# On every push to main: build the production image and push it to GHCR.
+# The box (github.com/sevenwritescode/box) picks up the new image within a few minutes.
+name: Image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  image:
+    permissions:
+      contents: read
+      packages: write
+    uses: sevenwritescode/box/.github/workflows/image.yaml@main

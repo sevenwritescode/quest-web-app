@@ -173,3 +173,8 @@ server.listen(PORT, () => {
 
 
 
+
+// as the container's main process, Node ignores stop signals unless told what to do with them
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.on(signal, () => process.exit(0));
+}

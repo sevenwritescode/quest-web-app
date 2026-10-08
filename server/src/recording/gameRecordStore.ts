@@ -23,7 +23,7 @@ export type StoredGameRecord = {
   detailedRecord?: DetailedGameRecord,
 };
 
-const RECORD_FILE_PATH = path.resolve(process.cwd(), "game-records.json");
+const RECORD_FILE_PATH = process.env.GAME_RECORDS_PATH ?? path.resolve(process.cwd(), "game-records.json");
 let writeQueue: Promise<void> = Promise.resolve();
 
 async function readAllRecords(): Promise<StoredGameRecord[]> {
